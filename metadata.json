@@ -1,0 +1,6 @@
+{
+  "name": "The Final Lecture — Game PRD",
+  "description": "Product Requirements Document and interactive 3D greybox level blockout for a first-person 3D stealth-horror game about escaping a creepy lecturer's class.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

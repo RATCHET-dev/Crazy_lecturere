@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1180" font-family="Georgia, serif" xmlns:c2pa="http://c2pa.org/manifest">
+<defs>
+<radialGradient id="bg" cx="50%" cy="40%" r="80%"><stop offset="0" stop-color="#9a9a9a"/><stop offset="1" stop-color="#7a7a7a"/></radialGradient>
+
+<g id="headBase">
+  <path d="M-32,-668 Q-32,-704 0,-704 Q32,-704 32,-668 L30,-642 Q22,-614 0,-610 Q-22,-614 -30,-642 Z" fill="#a06c48"/>
+  <ellipse cx="-33" cy="-652" rx="5" ry="9" fill="#946140"/><ellipse cx="33" cy="-652" rx="5" ry="9" fill="#946140"/>
+  <path d="M-34,-660 Q-38,-710 0,-711 Q38,-710 34,-660 L30,-676 Q14,-692 0,-690 Q-14,-692 -30,-676 Z" fill="#121214"/>
+  <path d="M-34,-660 L-31,-650 L-29,-666 Z M34,-660 L31,-650 L29,-666 Z" fill="#2a2a2e"/>
+  <path d="M0,-654 L-4,-636 Q0,-633 4,-636" fill="none" stroke="#7d4f31" stroke-width="2"/>
+</g>
+
+<g id="bust">
+  <rect x="-12" y="-626" width="24" height="26" fill="#946140"/>
+  <path d="M-52,-570 Q-32,-596 -12,-612 L12,-612 Q32,-596 52,-570 L62,-540 L-62,-540 Z" fill="#2a7f86"/>
+  <path d="M-30,-606 Q0,-574 30,-606 Q34,-618 0,-620 Q-34,-618 -30,-606Z" fill="#226a70"/>
+  <path d="M-7,-588 L-8,-548 M7,-588 L8,-548" stroke="#e9e4d8" stroke-width="3"/>
+</g>
+
+<!-- expressions -->
+<g id="fN" fill="none" stroke-linecap="round">
+  <path d="M-24,-668 L-8,-669 M8,-669 L24,-668" stroke="#121214" stroke-width="4"/>
+  <ellipse cx="-15" cy="-656" rx="4.5" ry="3" fill="#fff"/><circle cx="-15" cy="-656" r="2" fill="#111"/>
+  <ellipse cx="15" cy="-656" rx="4.5" ry="3" fill="#fff"/><circle cx="15" cy="-656" r="2" fill="#111"/>
+  <path d="M-9,-626 Q0,-623 9,-626" stroke="#4a2616" stroke-width="2.5"/>
+</g>
+<g id="fF" fill="none" stroke-linecap="round">
+  <path d="M-25,-675 L-7,-681 M7,-681 L25,-675" stroke="#121214" stroke-width="4"/>
+  <ellipse cx="-15" cy="-656" rx="5.5" ry="5.5" fill="#fff"/><circle cx="-15" cy="-656" r="1.5" fill="#111"/>
+  <ellipse cx="15" cy="-656" rx="5.5" ry="5.5" fill="#fff"/><circle cx="15" cy="-656" r="1.5" fill="#111"/>
+  <ellipse cx="0" cy="-623" rx="6.5" ry="7.5" fill="#3a1810" stroke="none"/>
+  <path d="M30,-697 Q26,-689 30,-686 Q34,-689 30,-697Z" fill="#9fd3e6" stroke="none"/>
+</g>
+<g id="fS" fill="none" stroke-linecap="round">
+  <path d="M-24,-677 Q-15,-683 -7,-677 M7,-677 Q15,-683 24,-677" stroke="#121214" stroke-width="4"/>
+  <ellipse cx="-15" cy="-656" rx="5" ry="5.5" fill="#fff"/><circle cx="-15" cy="-656" r="2.2" fill="#111"/>
+  <ellipse cx="15" cy="-656" rx="5" ry="5.5" fill="#fff"/><circle cx="15" cy="-656" r="2.2" fill="#111"/>
+  <ellipse cx="0" cy="-623" rx="4" ry="5" fill="#3a1810" stroke="none"/>
+</g>
+<g id="fE" fill="none" stroke-linecap="round">
+  <path d="M-24,-663 L-8,-669 M8,-669 L24,-663" stroke="#121214" stroke-width="4"/>
+  <ellipse cx="-15" cy="-655" rx="4.5" ry="2" fill="#fff"/><circle cx="-15" cy="-654.5" r="1.5" fill="#111"/>
+  <ellipse cx="15" cy="-655" rx="4.5" ry="2" fill="#fff"/><circle cx="15" cy="-654.5" r="1.5" fill="#111"/>
+  <path d="M-21,-658 Q-15,-661 -9,-658 M9,-658 Q15,-661 21,-658" stroke="#7d4f31" stroke-width="2"/>
+  <path d="M-21,-648 Q-15,-644 -9,-648 M9,-648 Q15,-644 21,-648" stroke="#7d4f31" stroke-width="1.6"/>
+  <path d="M-8,-622 Q0,-628 8,-622" stroke="#4a2616" stroke-width="2.5"/>
+</g>
+<g id="fD" fill="none" stroke-linecap="round">
+  <path d="M-25,-669 L-7,-663 M7,-663 L25,-669" stroke="#121214" stroke-width="4.5"/>
+  <ellipse cx="-15" cy="-655" rx="5" ry="2.4" fill="#fff"/><circle cx="-15" cy="-655" r="1.8" fill="#111"/>
+  <ellipse cx="15" cy="-655" rx="5" ry="2.4" fill="#fff"/><circle cx="15" cy="-655" r="1.8" fill="#111"/>
+  <path d="M-9,-625 L9,-625" stroke="#4a2616" stroke-width="3"/>
+  <path d="M-19,-640 L-15,-632 M19,-640 L15,-632" stroke="#7d4f31" stroke-width="1.8"/>
+</g>
+
+<!-- front body -->
+<g id="bodyF">
+  <path d="M-54,-24 L-14,-24 L-8,-6 Q-8,2 -16,2 L-56,2 Q-64,0 -60,-10 Z M54,-24 L14,-24 L8,-6 Q8,2 16,2 L56,2 Q64,0 60,-10 Z" fill="#edeadc"/>
+  <rect x="-62" y="-4" width="54" height="6" fill="#e0a526"/><rect x="8" y="-4" width="54" height="6" fill="#e0a526"/>
+  <path d="M-52,-395 L52,-395 L48,-350 L44,-24 L12,-24 L2,-340 L-2,-340 L-12,-24 L-44,-24 L-48,-350Z" fill="#2b3445"/>
+  <path d="M-12,-24 L-2,-340 M12,-24 L2,-340" stroke="#1d2433" stroke-width="2"/>
+  <path d="M-58,-598 L58,-598 L56,-376 L-56,-376 Z" fill="#2a7f86"/>
+  <rect x="-56" y="-392" width="112" height="16" fill="#226a70"/>
+  <path d="M-34,-470 L34,-470 L40,-412 L-40,-412 Z" fill="#256f75" stroke="#1d5a5f" stroke-width="2"/>
+  <rect x="22" y="-560" width="16" height="16" rx="3" fill="#e0a526"/>
+  <path d="M-58,-596 L-88,-582 L-100,-350 L-72,-344 L-54,-540Z M58,-596 L88,-582 L100,-350 L72,-344 L54,-540Z" fill="#2a7f86"/>
+  <rect x="-102" y="-362" width="32" height="14" fill="#226a70"/><rect x="70" y="-362" width="32" height="14" fill="#226a70"/>
+  <ellipse cx="-86" cy="-326" rx="12" ry="19" fill="#a06c48"/><ellipse cx="86" cy="-326" rx="12" ry="19" fill="#a06c48"/>
+  <rect x="73" y="-370" width="26" height="9" rx="3" fill="#1b1b1d"/><rect x="80" y="-368" width="12" height="5" fill="#6fd0c8"/>
+  <rect x="-12" y="-628" width="24" height="30" fill="#946140"/>
+  <path d="M-34,-604 Q0,-570 34,-604 Q38,-616 0,-618 Q-38,-616 -34,-604Z" fill="#226a70"/>
+  <path d="M-7,-588 L-8,-524 M7,-588 L8,-524" stroke="#e9e4d8" stroke-width="3"/>
+  <path d="M-40,-598 L-42,-470 L-28,-470 L-24,-598Z M40,-598 L42,-470 L28,-470 L24,-598Z" fill="#e0a526"/>
+  <rect x="-26" y="-524" width="52" height="5" fill="#3a3a3f"/>
+</g>
+</defs>
+
+<rect width="1600" height="1180" fill="url(#bg)"/>
+<text x="800" y="50" text-anchor="middle" font-size="30" fill="#f2f2ee" letter-spacing="3">THE PROTAGONIST  —  TURNAROUND, 175 cm (5'9")</text>
+<line x1="40" y1="812" x2="1560" y2="812" stroke="#5b5b5b" stroke-width="2"/>
+<g fill="#f2f2ee" font-size="22" text-anchor="middle">
+<text x="200" y="855">FRONT</text><text x="600" y="855">SIDE</text><text x="1000" y="855">BACK</text><text x="1400" y="855">THREE-QUARTER</text></g>
+
+<!-- FRONT -->
+<g transform="translate(200,810)"><use href="#bodyF"/><use href="#headBase"/><use href="#fN"/></g>
+
+<!-- SIDE -->
+<g transform="translate(600,810)">
+  <path d="M-16,-24 L-14,-6 Q-14,2 -4,2 L44,2 Q52,0 50,-9 L42,-22 L22,-26 Z" fill="#edeadc"/>
+  <rect x="-14" y="-4" width="64" height="6" fill="#e0a526"/>
+  <path d="M-24,-395 L28,-395 L24,-24 L-14,-24 Z" fill="#2b3445"/>
+  <path d="M-28,-598 L30,-598 L32,-376 L-26,-376 Z" fill="#2a7f86"/>
+  <rect x="-26" y="-392" width="58" height="16" fill="#226a70"/>
+  <rect x="-66" y="-596" width="46" height="196" rx="14" fill="#3a3a3f"/>
+  <rect x="-72" y="-500" width="20" height="90" rx="8" fill="#e0a526"/>
+  <path d="M-8,-598 L6,-598 L4,-480 L-8,-480Z" fill="#e0a526"/>
+  <path d="M-12,-596 L16,-596 L22,-350 L-8,-344Z" fill="#2a7f86"/>
+  <rect x="-8" y="-360" width="30" height="14" fill="#226a70"/>
+  <ellipse cx="8" cy="-326" rx="11" ry="19" fill="#a06c48"/>
+  <rect x="-6" y="-370" width="26" height="9" rx="3" fill="#1b1b1d"/>
+  <path d="M-30,-604 Q-10,-612 14,-606 L10,-596 L-26,-596Z" fill="#226a70"/>
+  <rect x="-10" y="-628" width="22" height="32" fill="#946140"/>
+  <path d="M-26,-672 Q-26,-704 2,-704 Q30,-700 32,-676 L33,-662 L40,-649 L33,-643 L34,-632 L28,-619 L10,-610 L-14,-615 L-22,-640 Z" fill="#a06c48"/>
+  <path d="M-27,-660 Q-30,-710 4,-711 Q30,-708 31,-684 Q10,-694 -2,-688 L-12,-652 Z" fill="#121214"/>
+  <ellipse cx="-8" cy="-646" rx="6" ry="9" fill="#946140" stroke="#7d4f31"/>
+  <path d="M14,-668 L32,-667" stroke="#121214" stroke-width="4.5" stroke-linecap="round"/>
+  <ellipse cx="24" cy="-656" rx="4" ry="3" fill="#fff"/><circle cx="25.5" cy="-656" r="2" fill="#111"/>
+  <path d="M22,-627 L32,-628" stroke="#4a2616" stroke-width="2.5" stroke-linecap="round"/>
+</g>
+
+<!-- BACK -->
+<g transform="translate(1000,810)">
+  <path d="M-54,-24 L-14,-24 L-8,-6 Q-8,2 -16,2 L-56,2 Q-64,0 -60,-10 Z M54,-24 L14,-24 L8,-6 Q8,2 16,2 L56,2 Q64,0 60,-10 Z" fill="#edeadc"/>
+  <rect x="-62" y="-4" width="54" height="6" fill="#e0a526"/><rect x="8" y="-4" width="54" height="6" fill="#e0a526"/>
+  <path d="M-52,-395 L52,-395 L48,-350 L44,-24 L12,-24 L2,-340 L-2,-340 L-12,-24 L-44,-24 L-48,-350Z" fill="#2b3445"/>
+  <path d="M-38,-372 h24 M14,-372 h24" stroke="#1d2433" stroke-width="3"/>
+  <path d="M-58,-598 L58,-598 L56,-376 L-56,-376 Z" fill="#2a7f86"/>
+  <rect x="-56" y="-392" width="112" height="16" fill="#226a70"/>
+  <path d="M-58,-596 L-88,-582 L-100,-350 L-72,-344 L-54,-540Z M58,-596 L88,-582 L100,-350 L72,-344 L54,-540Z" fill="#2a7f86"/>
+  <rect x="-102" y="-362" width="32" height="14" fill="#226a70"/><rect x="70" y="-362" width="32" height="14" fill="#226a70"/>
+  <ellipse cx="-86" cy="-326" rx="12" ry="19" fill="#a06c48"/><ellipse cx="86" cy="-326" rx="12" ry="19" fill="#a06c48"/>
+  <rect x="-99" y="-370" width="26" height="9" rx="3" fill="#1b1b1d"/>
+  <rect x="-12" y="-628" width="24" height="30" fill="#946140"/>
+  <rect x="-48" y="-604" width="96" height="214" rx="16" fill="#3a3a3f"/>
+  <path d="M-14,-604 Q0,-622 14,-604" fill="none" stroke="#2f2f34" stroke-width="6"/>
+  <rect x="-32" y="-520" width="64" height="86" rx="8" fill="#2f2f34"/>
+  <path d="M-30,-520 L30,-520" stroke="#e0a526" stroke-width="4"/>
+  <rect x="-58" y="-470" width="12" height="70" rx="5" fill="#2f2f34"/><rect x="46" y="-470" width="12" height="70" rx="5" fill="#2f2f34"/>
+  <path d="M-33,-668 Q-33,-704 0,-704 Q33,-704 33,-668 L30,-642 Q22,-614 0,-610 Q-22,-614 -30,-642 Z" fill="#a06c48"/>
+  <ellipse cx="-33" cy="-652" rx="5" ry="9" fill="#946140"/><ellipse cx="33" cy="-652" rx="5" ry="9" fill="#946140"/>
+  <path d="M-34,-654 Q-38,-710 0,-711 Q38,-710 34,-654 L28,-634 Q0,-626 -28,-634 Z" fill="#121214"/>
+  <path d="M-30,-640 L-28,-634 L-20,-638 M30,-640 L28,-634 L20,-638" fill="#2a2a2e"/>
+  <path d="M-30,-606 Q0,-590 30,-606 Q34,-618 0,-620 Q-34,-618 -30,-606Z" fill="#226a70"/>
+</g>
+
+<!-- THREE-QUARTER -->
+<g transform="translate(1400,810)">
+  <g transform="scale(0.88,1)"><use href="#bodyF"/></g>
+  <g transform="translate(6,0) scale(0.92,1)"><use href="#headBase"/><use href="#fN"/></g>
+</g>
+
+<!-- EXPRESSIONS -->
+<text x="800" y="925" text-anchor="middle" font-size="26" fill="#f2f2ee" letter-spacing="3">EXPRESSIONS</text>
+<g transform="translate(160,1040) scale(1.6) translate(0,656)"><use href="#bust"/><use href="#headBase"/><use href="#fN"/></g>
+<g transform="translate(480,1040) scale(1.6) translate(0,656)"><use href="#bust"/><use href="#headBase"/><use href="#fF"/></g>
+<g transform="translate(800,1040) scale(1.6) translate(0,656)"><use href="#bust"/><use href="#headBase"/><use href="#fS"/></g>
+<g transform="translate(1120,1040) scale(1.6) translate(0,656)"><use href="#bust"/><use href="#headBase"/><use href="#fE"/></g>
+<g transform="translate(1440,1040) scale(1.6) translate(0,656)"><use href="#bust"/><use href="#headBase"/><use href="#fD"/></g>
+<g fill="#f2f2ee" font-size="20" text-anchor="middle">
+<text x="160" y="1150">NEUTRAL</text><text x="480" y="1150">FRIGHTENED</text><text x="800" y="1150">SURPRISED</text><text x="1120" y="1150">EXHAUSTED</text><text x="1440" y="1150">DETERMINED</text></g>
+<text x="800" y="1172" text-anchor="middle" font-size="14" fill="#e6e6e0">Palette: skin #A06C48 · hair #121214 · hoodie #2A7F86 / trim #226A70 · jeans #2B3445 · sneakers #EDEADC · accent #E0A526 · pack #3A3A3F</text>
+<metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYToyNGNmYzdiMC1kYTE4LTQ2NTYtODU0Ny03NjQxN2FmYmVmODMAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaIMeIypePX2YC96Yv+e7bCQAAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDpmYmI2ZTY5NS1lZjY3LTRmOTQtYjUwZS05ODJhMzFiYTgxYjJscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNo57Z/uB55Lj6EMy5Vy4WaDgAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFggVuPvRgAClDp9f4M9P4odq4OPRfZtbOYEv81/jMl1ixekZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaMec7Yg3oUrGx5KBIquctecAAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRMAAAAAAAAAAAAAAAAZGhhc2hYIItqqxeKbwP124ACgEAa2acqhZLceo7+zsglYuoVKiyYZG5hbWVuanVtYmYgbWFuaWZlc3RqZXhjbHVzaW9uc4GiZXN0YXJ0GSw4Zmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOjI0Y2ZjN2IwLWRhMTgtNDY1Ni04NTQ3LTc2NDE3YWZiZWY4My9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOmJjMTY1OTU0LWJmYzEtNDc2MS1hZTFhLTIwYTA1MzBlOTQ0ZHJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCBW4+9GAAKUOn1/gz0/ih2rg49F9m1s5gS/zX+MyXWLF6JjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggTvq4pxwitv0m+9iuHFI0hO2ECbPef93+wYsJFOU20pmiY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFgg9oZ0YiGlzACuTkNPZigWuz5IoycQbUhrTjJb2e0SQ/V0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQNLzi987zz8kUvSIf+ZjdjEbRWqUqIrTWxLY7ipMGpp+e3apYFVQZUUPez8OeR0v4CTMFyVxk6WjNBabqATnQ20=</c2pa:manifest></metadata></svg>
