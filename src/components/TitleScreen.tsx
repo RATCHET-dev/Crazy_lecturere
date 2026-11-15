@@ -7,6 +7,7 @@ import {
 import { CAMPAIGN_LEVELS, getLevelDef } from '../game/levels';
 import { LECTURERS, LecturerDef, getLecturerDef } from '../game/lecturers';
 import { isLevelUnlocked } from '../game/saveSystem';
+import { ControlSettings } from '../game/controls';
 import {
   DifficultyLevel,
   LecturerId,
@@ -21,6 +22,8 @@ interface TitleScreenProps {
   selectedLevelId: number;
   selectedLecturerId: LecturerId;
   savedRun: SaveGamePayload | null;
+  controlSettings: ControlSettings;
+  onControlSettingsChange: (next: ControlSettings) => void;
   onProfileChange: (profile: ProtagonistProfile) => void;
   onDifficultyChange: (difficulty: DifficultyLevel) => void;
   onLevelChange: (levelId: number) => void;
@@ -96,6 +99,8 @@ export function TitleScreen({
   selectedLevelId,
   selectedLecturerId,
   savedRun,
+  controlSettings,
+  onControlSettingsChange,
   onProfileChange,
   onDifficultyChange,
   onLevelChange,
@@ -477,25 +482,25 @@ export function TitleScreen({
           </div>
         </div>
 
-        {/* Collapsible Controls & Field Abilities Section */}
+        {/* Collapsible Phone & Laptop Controls Section */}
         {showControls && (
           <section
-            aria-label="Controls and Field Abilities"
-            className="bg-[#0e1116]/94 border border-white/10 rounded-lg p-3 space-y-2"
+            aria-label="Phone and Laptop Controls"
+            className="bg-[#0e1116]/94 border border-white/10 rounded-lg p-3 space-y-2.5"
           >
             <div className="flex items-center justify-between text-xs text-[#9aa3ad]">
-              <span>Controls &amp; Field Abilities</span>
-              <span className="font-mono text-[#d99b43]">Desktop &amp; Mobile Touch</span>
+              <span>Phone &amp; Laptop Controls</span>
+              <span className="font-mono text-[#d99b43]">Touch · Trackpad · Keyboard</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px]">
               {[
+                { key: 'Phone Thumbstick', action: '360° Move + Rim Sprint' },
+                { key: 'Drag Right Screen', action: 'Phone Camera Look' },
+                { key: 'Trackpad / J·L·I·K', action: '2-Finger or Key Look' },
+                { key: 'WASD / Arrows', action: 'Laptop Move & Steer' },
                 { key: 'Shift / Sprint', action: 'Sprint (5.65 m/s)' },
-                { key: 'WASD / Arrows', action: 'Move & Steer' },
-                { key: 'Space', action: 'Jump / Vault Desks' },
-                { key: 'R', action: 'Tactical Roll' },
-                { key: 'C / Ctrl', action: 'Crouch Stealth' },
-                { key: 'Q', action: 'Paper Plane Decoy' },
-                { key: 'E / Use', action: 'Talk, Fuse & Lockers' },
+                { key: 'Space / R', action: 'Jump Desks · Roll' },
+                { key: 'C · Q · E', action: 'Crouch · Plane · Use' },
                 { key: 'F · V', action: 'Flashlight · 1P/3P' },
               ].map((item) => (
                 <div
@@ -508,6 +513,61 @@ export function TitleScreen({
                   <div className="text-[#cfd4da] truncate mt-0.5">{item.action}</div>
                 </div>
               ))}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1.5 border-t border-white/10 text-[11px]">
+              <label className="space-y-1">
+                <div className="flex justify-between text-[#cfd4da]">
+                  <span>Look Speed</span>
+                  <span className="font-mono text-[#d99b43]">
+                    {controlSettings.lookSensitivity.toFixed(1)}x
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0.4}
+                  max={2.2}
+                  step={0.1}
+                  value={controlSettings.lookSensitivity}
+                  onChange={(e) =>
+                    onControlSettingsChange({
+                      ...controlSettings,
+                      lookSensitivity: Number(e.target.value),
+                    })
+                  }
+                  className="w-full accent-[#d99b43] cursor-pointer"
+                />
+              </label>
+
+              <label className="flex items-center justify-between gap-2 px-2 py-1.5 rounded bg-[#090b0f] border border-white/10 text-[#cfd4da] cursor-pointer">
+                <span>Phone Rim Sprint</span>
+                <input
+                  type="checkbox"
+                  checked={controlSettings.autoSprintJoystick}
+                  onChange={(e) =>
+                    onControlSettingsChange({
+                      ...controlSettings,
+                      autoSprintJoystick: e.target.checked,
+                    })
+                  }
+                  className="accent-[#d99b43]"
+                />
+              </label>
+
+              <label className="flex items-center justify-between gap-2 px-2 py-1.5 rounded bg-[#090b0f] border border-white/10 text-[#cfd4da] cursor-pointer">
+                <span>Laptop Shift Toggle</span>
+                <input
+                  type="checkbox"
+                  checked={controlSettings.sprintToggleMode}
+                  onChange={(e) =>
+                    onControlSettingsChange({
+                      ...controlSettings,
+                      sprintToggleMode: e.target.checked,
+                    })
+                  }
+                  className="accent-[#d99b43]"
+                />
+              </label>
             </div>
           </section>
         )}
@@ -557,7 +617,7 @@ export function TitleScreen({
 
       {/* Single flat borderless control hint line */}
       <div className="text-[11px] sm:text-xs font-mono text-[#9aa3ad] tracking-wide pointer-events-auto pt-2">
-        WASD Move · Shift Sprint · Space Jump · R Roll · Q Plane · 1-3 Emotes · G Taunt · V Camera · F Light · E Talk/Use
+        Laptop: WASD · Trackpad 2-Finger / Drag / J·L Look · Shift Sprint · Space Jump · R Roll · E Use | Phone: Thumbstick + Drag Look
       </div>
     </div>
   );

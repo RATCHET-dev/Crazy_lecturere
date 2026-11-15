@@ -17,6 +17,11 @@ import {
 } from './game/saveSystem';
 import { CAMPAIGN_LEVELS, getLevelDef } from './game/levels';
 import { getLecturerDef } from './game/lecturers';
+import {
+  ControlSettings,
+  loadControlSettings,
+  saveControlSettings,
+} from './game/controls';
 import { GameEngineCanvas, GameEngineHandle } from './game/GameEngineCanvas';
 import { TitleScreen } from './components/TitleScreen';
 import { GameHud } from './components/GameHud';
@@ -123,7 +128,15 @@ export default function App() {
   const [hud, setHud] = useState<GameHudSnapshot>(() =>
     buildInitialHudForLevel(selectedLevelId, profile.rank, selectedLecturerId),
   );
+  const [controlSettings, setControlSettings] = useState<ControlSettings>(() =>
+    loadControlSettings(),
+  );
   const [muted, setMuted] = useState(false);
+
+  const handleControlSettingsChange = useCallback((next: ControlSettings) => {
+    setControlSettings(next);
+    saveControlSettings(next);
+  }, []);
 
   const engineHandleRef = useRef<GameEngineHandle | null>(null);
 
@@ -274,6 +287,7 @@ export default function App() {
         levelId={selectedLevelId}
         lecturerId={selectedLecturerId}
         runNonce={runNonce}
+        controlSettings={controlSettings}
         onHudUpdate={setHud}
         onPhaseChange={handlePhaseChange}
         engineHandleRef={engineHandleRef}
@@ -286,6 +300,8 @@ export default function App() {
           selectedLevelId={selectedLevelId}
           selectedLecturerId={selectedLecturerId}
           savedRun={savedRun}
+          controlSettings={controlSettings}
+          onControlSettingsChange={handleControlSettingsChange}
           onProfileChange={setProfile}
           onDifficultyChange={setDifficulty}
           onLevelChange={handleSelectLevel}
@@ -300,6 +316,8 @@ export default function App() {
           hud={hud}
           profile={profile}
           muted={muted}
+          controlSettings={controlSettings}
+          onControlSettingsChange={handleControlSettingsChange}
           onToggleMute={handleToggleMute}
           onPause={() => {
             document.exitPointerLock?.();

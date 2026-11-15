@@ -619,4 +619,117 @@ test('proximity warning audio cue scales louder and faster as lecturer approache
   assert.equal(closeChase.isChase, true);
 });
 
+import {
+  DEFAULT_CONTROL_SETTINGS,
+  computeJoystickVector,
+  computeLookDeltas,
+  loadControlSettings,
+  saveControlSettings,
+} from './controls';
+
+test('mobile thumbstick computes deadzone, circular clamping, diagonals, and rim auto-sprint', () => {
+  // Micro-jitter inside 14% deadzone produces zero movement
+  const tiny = computeJoystickVector(3, -2, 40);
+  assert.equal(tiny.moveX, 0);
+  assert.equal(tiny.moveY, 0);
+  assert.equal(tiny.autoSprinting, false);
+
+  // Mid push up (-dy) walks forward without triggering rim sprint
+  const walkUp = computeJoystickVector(0, -24, 40, 0.14, 0.86, true);
+  assert.equal(walkUp.moveX, 0);
+  assert.ok(walkUp.moveY > 0.45 && walkUp.moveY < 0.7);
+  assert.equal(walkUp.autoSprinting, false);
+
+  // Full diagonal push beyond 86% clamps circularly and enables autoSprinting
+  const diagSprint = computeJoystickVector(60, -60, 40, 0.14, 0.86, true);
+  assert.ok(Math.hypot(diagSprint.moveX, diagSprint.moveY) <= 1.0001);
+  assert.ok(diagSprint.moveX > 0.65 && diagSprint.moveY > 0.65);
+  assert.equal(diagSprint.autoSprinting, true);
+
+  // Auto-sprint respects opt-out toggle
+  const noAuto = computeJoystickVector(0, -40, 40, 0.14, 0.86, false);
+  assert.equal(noAuto.autoSprinting, false);
+});
+
+test('cross-device look deltas scale with sensitivity, clamp spikes, and respect invertY', () => {
+  const normalWheel = computeLookDeltas({
+    rawDx: 20,
+    rawDy: -15,
+    sensitivity: 1.0,
+    invertY: false,
+    source: 'wheel_trackpad',
+  });
+  const fastWheel = computeLookDeltas({
+    rawDx: 20,
+    rawDy: -15,
+    sensitivity: 2.0,
+    invertY: false,
+    source: 'wheel_trackpad',
+  });
+  const invertedWheel = computeLookDeltas({
+    rawDx: 20,
+    rawDy: -15,
+    sensitivity: 1.0,
+    invertY: true,
+    source: 'wheel_trackpad',
+  });
+
+  assert.ok(normalWheel.dYaw < 0 && normalWheel.dPitch > 0);
+  assert.ok(Math.abs(fastWheel.dYaw - normalWheel.dYaw * 2) < 1e-6);
+  assert.ok(Math.abs(invertedWheel.dPitch + normalWheel.dPitch) < 1e-6);
+
+  // Extreme glitch spikes are safely clamped
+  const hugeTouch = computeLookDeltas({
+    rawDx: 900,
+    rawDy: -900,
+    sensitivity: 1.0,
+    invertY: false,
+    source: 'touch',
+  });
+  const maxAllowedTouch = computeLookDeltas({
+    rawDx: 65,
+    rawDy: -65,
+    sensitivity: 1.0,
+    invertY: false,
+    source: 'touch',
+  });
+  assert.equal(hugeTouch.dYaw, maxAllowedTouch.dYaw);
+  assert.equal(hugeTouch.dPitch, maxAllowedTouch.dPitch);
+});
+
+test('control settings persist and load cleanly across sessions', () => {
+  const store = new Map<string, string>();
+  const mockStorage = {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => {
+      store.set(k, v);
+    },
+    removeItem: (k: string) => {
+      store.delete(k);
+    },
+    clear: () => store.clear(),
+    key: () => null,
+    length: 0,
+  } as Storage;
+
+  assert.deepEqual(loadControlSettings(mockStorage), DEFAULT_CONTROL_SETTINGS);
+
+  saveControlSettings(
+    {
+      lookSensitivity: 1.6,
+      invertY: true,
+      autoSprintJoystick: false,
+      sprintToggleMode: true,
+    },
+    mockStorage,
+  );
+
+  const loaded = loadControlSettings(mockStorage);
+  assert.equal(loaded.lookSensitivity, 1.6);
+  assert.equal(loaded.invertY, true);
+  assert.equal(loaded.autoSprintJoystick, false);
+  assert.equal(loaded.sprintToggleMode, true);
+});
+
+
 

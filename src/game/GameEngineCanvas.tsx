@@ -53,6 +53,12 @@ import {
   resolveHorizontalCollision3D,
   stepPlayerPhysics,
 } from './physics';
+import {
+  ControlSettings,
+  DEFAULT_CONTROL_SETTINGS,
+  clampSensitivity,
+  computeLookDeltas,
+} from './controls';
 
 export interface MobileInputState {
   moveX: number; // -1..1
@@ -84,6 +90,7 @@ interface GameEngineCanvasProps {
   levelId: number;
   lecturerId: LecturerId;
   runNonce: number;
+  controlSettings?: ControlSettings;
   onHudUpdate: (snapshot: GameHudSnapshot) => void;
   onPhaseChange: (phase: GamePhase, snapshot: GameHudSnapshot) => void;
   engineHandleRef: React.MutableRefObject<GameEngineHandle | null>;
@@ -1102,6 +1109,7 @@ export function GameEngineCanvas({
   levelId,
   lecturerId,
   runNonce,
+  controlSettings = DEFAULT_CONTROL_SETTINGS,
   onHudUpdate,
   onPhaseChange,
   engineHandleRef,
@@ -1113,6 +1121,7 @@ export function GameEngineCanvas({
   const profileRef = useRef<ProtagonistProfile>(profile);
   const levelIdRef = useRef<number>(levelId);
   const lecturerIdRef = useRef<LecturerId>(lecturerId);
+  const controlSettingsRef = useRef<ControlSettings>(controlSettings);
   const onHudUpdateRef = useRef(onHudUpdate);
   const onPhaseChangeRef = useRef(onPhaseChange);
 
@@ -1121,6 +1130,7 @@ export function GameEngineCanvas({
   profileRef.current = profile;
   levelIdRef.current = levelId;
   lecturerIdRef.current = lecturerId;
+  controlSettingsRef.current = controlSettings;
   onHudUpdateRef.current = onHudUpdate;
   onPhaseChangeRef.current = onPhaseChange;
 
@@ -1648,6 +1658,7 @@ export function GameEngineCanvas({
     // Input Tracking (Edge vs Held)
     const keysHeld = new Set<string>();
     const mobileMove = { x: 0, y: 0 };
+    let mobileAutoSprint = false;
     let sprintToggled = false;
     let sprintExhausted = false;
     let isActivelySprinting = false;
@@ -1777,6 +1788,9 @@ export function GameEngineCanvas({
       camSmoothX = targetLevel.playerSpawn.x;
       camSmoothY = 1.65;
       camSmoothZ = targetLevel.playerSpawn.z + Math.max(0, startRig.offsetBack);
+      mobileMove.x = 0;
+      mobileMove.y = 0;
+      mobileAutoSprint = false;
       sprintToggled = false;
       sprintExhausted = false;
       isActivelySprinting = false;
@@ -2199,20 +2213,24 @@ export function GameEngineCanvas({
         audio.setMuted(muted);
       },
       applyMobileLook: (dx, dy) => {
-        const clampedDx = THREE.MathUtils.clamp(dx, -65, 65);
-        const clampedDy = THREE.MathUtils.clamp(dy, -65, 65);
-        playerYaw -= clampedDx * 0.0048;
-        playerPitch = THREE.MathUtils.clamp(playerPitch - clampedDy * 0.0042, -1.25, 1.25);
+        const cfg = controlSettingsRef.current;
+        const { dYaw, dPitch } = computeLookDeltas({
+          rawDx: dx,
+          rawDy: dy,
+          sensitivity: cfg.lookSensitivity,
+          invertY: cfg.invertY,
+          source: 'touch',
+        });
+        playerYaw += dYaw;
+        playerPitch = THREE.MathUtils.clamp(playerPitch + dPitch, -1.25, 1.25);
       },
       setMobileMove: (mx, my) => {
-        mobileMove.x = mx;
-        mobileMove.y = my;
+        mobileMove.x = THREE.MathUtils.clamp(mx, -1, 1);
+        mobileMove.y = THREE.MathUtils.clamp(my, -1, 1);
       },
       setMobileSprint: (sprinting) => {
-        sprintToggled = sprinting;
+        mobileAutoSprint = sprinting;
         if (sprinting && crouching) crouching = false;
-        const near = findNearestInteractable();
-        onHudUpdateRef.current(buildHudSnapshot(near?.prompt ?? null, near?.id ?? null));
       },
     };
 
@@ -2267,6 +2285,11 @@ export function GameEngineCanvas({
       }
       if ((e.code === 'ShiftLeft' || e.code === 'ShiftRight') && !e.repeat && !hiddenInLockerId) {
         if (crouching) crouching = false;
+        if (controlSettingsRef.current.sprintToggleMode) {
+          if (!sprintExhausted || sprintToggled) {
+            sprintToggled = !sprintToggled;
+          }
+        }
       }
       if ((e.code === 'KeyC' || e.code === 'ControlLeft') && !e.repeat) {
         if (!hiddenInLockerId) {
@@ -2295,9 +2318,11 @@ export function GameEngineCanvas({
       activeTouchId = null;
       mobileMove.x = 0;
       mobileMove.y = 0;
+      mobileAutoSprint = false;
     };
 
     const onMouseDown = (e: MouseEvent) => {
+      if (e.button !== 0) return;
       if (phaseRef.current === 'title') {
         isPointerDragging = true;
         lastMouseX = e.clientX;
@@ -2311,7 +2336,14 @@ export function GameEngineCanvas({
       lastMouseX = e.clientX;
       lastMouseY = e.clientY;
       if (document.pointerLockElement !== renderer.domElement) {
-        renderer.domElement.requestPointerLock?.();
+        try {
+          const maybePromise = renderer.domElement.requestPointerLock?.() as unknown as Promise<void> | undefined;
+          if (maybePromise && typeof maybePromise.catch === 'function') {
+            maybePromise.catch(() => {});
+          }
+        } catch {
+          // Pointer lock optional; drag-look and trackpad wheel-look remain active
+        }
       }
     };
 
@@ -2327,19 +2359,48 @@ export function GameEngineCanvas({
         return;
       }
       if (phaseRef.current !== 'playing') return;
+      const cfg = controlSettingsRef.current;
       if (document.pointerLockElement === renderer.domElement) {
-        const mx = THREE.MathUtils.clamp(e.movementX, -65, 65);
-        const my = THREE.MathUtils.clamp(e.movementY, -65, 65);
-        playerYaw -= mx * 0.0022;
-        playerPitch = THREE.MathUtils.clamp(playerPitch - my * 0.0022, -1.3, 1.3);
+        const { dYaw, dPitch } = computeLookDeltas({
+          rawDx: e.movementX,
+          rawDy: e.movementY,
+          sensitivity: cfg.lookSensitivity,
+          invertY: cfg.invertY,
+          source: 'pointer_lock',
+        });
+        playerYaw += dYaw;
+        playerPitch = THREE.MathUtils.clamp(playerPitch + dPitch, -1.3, 1.3);
       } else if (isPointerDragging) {
-        const dx = THREE.MathUtils.clamp(e.clientX - lastMouseX, -65, 65);
-        const dy = THREE.MathUtils.clamp(e.clientY - lastMouseY, -65, 65);
+        const rawDx = e.clientX - lastMouseX;
+        const rawDy = e.clientY - lastMouseY;
         lastMouseX = e.clientX;
         lastMouseY = e.clientY;
-        playerYaw -= dx * 0.004;
-        playerPitch = THREE.MathUtils.clamp(playerPitch - dy * 0.004, -1.3, 1.3);
+        const { dYaw, dPitch } = computeLookDeltas({
+          rawDx,
+          rawDy,
+          sensitivity: cfg.lookSensitivity,
+          invertY: cfg.invertY,
+          source: 'mouse_drag',
+        });
+        playerYaw += dYaw;
+        playerPitch = THREE.MathUtils.clamp(playerPitch + dPitch, -1.3, 1.3);
       }
+    };
+
+    // Two-finger laptop trackpad swipe rotates camera cleanly without click-holding
+    const onWheel = (e: WheelEvent) => {
+      if (phaseRef.current !== 'playing' || e.ctrlKey || e.metaKey) return;
+      e.preventDefault();
+      const cfg = controlSettingsRef.current;
+      const { dYaw, dPitch } = computeLookDeltas({
+        rawDx: e.deltaX,
+        rawDy: e.deltaY,
+        sensitivity: cfg.lookSensitivity,
+        invertY: cfg.invertY,
+        source: 'wheel_trackpad',
+      });
+      playerYaw += dYaw;
+      playerPitch = THREE.MathUtils.clamp(playerPitch + dPitch, -1.3, 1.3);
     };
 
     const onTouchStart = (e: TouchEvent) => {
@@ -2361,17 +2422,25 @@ export function GameEngineCanvas({
         const t = e.changedTouches[i];
         if (t.identifier !== activeTouchId) continue;
         e.preventDefault();
-        const dx = THREE.MathUtils.clamp(t.clientX - lastTouchX, -65, 65);
-        const dy = THREE.MathUtils.clamp(t.clientY - lastTouchY, -65, 65);
+        const rawDx = t.clientX - lastTouchX;
+        const rawDy = t.clientY - lastTouchY;
         lastTouchX = t.clientX;
         lastTouchY = t.clientY;
-        touchTotalDist += Math.hypot(dx, dy);
+        touchTotalDist += Math.hypot(rawDx, rawDy);
 
         if (phaseRef.current === 'title') {
-          titleTurntableSpin += dx * 0.018;
+          titleTurntableSpin += THREE.MathUtils.clamp(rawDx, -65, 65) * 0.018;
         } else if (phaseRef.current === 'playing') {
-          playerYaw -= dx * 0.0052;
-          playerPitch = THREE.MathUtils.clamp(playerPitch - dy * 0.0044, -1.25, 1.25);
+          const cfg = controlSettingsRef.current;
+          const { dYaw, dPitch } = computeLookDeltas({
+            rawDx,
+            rawDy,
+            sensitivity: cfg.lookSensitivity,
+            invertY: cfg.invertY,
+            source: 'touch',
+          });
+          playerYaw += dYaw;
+          playerPitch = THREE.MathUtils.clamp(playerPitch + dPitch, -1.25, 1.25);
         }
         break;
       }
@@ -2402,6 +2471,7 @@ export function GameEngineCanvas({
     renderer.domElement.addEventListener('mousedown', onMouseDown);
     window.addEventListener('mouseup', onMouseUp);
     window.addEventListener('mousemove', onMouseMove);
+    renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
     renderer.domElement.addEventListener('touchstart', onTouchStart, { passive: true });
     renderer.domElement.addEventListener('touchmove', onTouchMove, { passive: false });
     renderer.domElement.addEventListener('touchend', onTouchEnd);
@@ -2627,6 +2697,23 @@ export function GameEngineCanvas({
       } else if (phaseRef.current === 'playing') {
         elapsedSeconds += dt;
 
+        // Laptop Keyboard Camera Look (J/L turn yaw, I/K tilt pitch)
+        const cfg = controlSettingsRef.current;
+        const sens = clampSensitivity(cfg.lookSensitivity);
+        const keyTurnInput = (keysHeld.has('KeyJ') ? 1 : 0) - (keysHeld.has('KeyL') ? 1 : 0);
+        const keyPitchInput = (keysHeld.has('KeyI') ? 1 : 0) - (keysHeld.has('KeyK') ? 1 : 0);
+        if (keyTurnInput !== 0) {
+          playerYaw += keyTurnInput * 2.25 * sens * dt;
+        }
+        if (keyPitchInput !== 0) {
+          const pitchSign = cfg.invertY ? -1 : 1;
+          playerPitch = THREE.MathUtils.clamp(
+            playerPitch + keyPitchInput * 1.45 * sens * pitchSign * dt,
+            -1.25,
+            1.25,
+          );
+        }
+
         // Realistic 3D Kinematics (Momentum, Table Vaulting/Jumping, Sprinting, Rolling & Surface Audio)
         let moveForward =
           (keysHeld.has('KeyW') || keysHeld.has('ArrowUp') ? 1 : 0) -
@@ -2646,12 +2733,14 @@ export function GameEngineCanvas({
         if (stamina <= 1.5) {
           sprintExhausted = true;
           sprintToggled = false;
+          mobileAutoSprint = false;
         } else if (stamina >= 18) {
           sprintExhausted = false;
         }
 
+        const shiftHeld = !cfg.sprintToggleMode && (keysHeld.has('ShiftLeft') || keysHeld.has('ShiftRight'));
         const wantSprint =
-          (keysHeld.has('ShiftLeft') || keysHeld.has('ShiftRight') || sprintToggled) &&
+          (shiftHeld || sprintToggled || (cfg.autoSprintJoystick && mobileAutoSprint)) &&
           !crouching &&
           !hiddenInLockerId &&
           !sprintExhausted &&
@@ -3068,6 +3157,7 @@ export function GameEngineCanvas({
       renderer.domElement.removeEventListener('mousedown', onMouseDown);
       window.removeEventListener('mouseup', onMouseUp);
       window.removeEventListener('mousemove', onMouseMove);
+      renderer.domElement.removeEventListener('wheel', onWheel);
       renderer.domElement.removeEventListener('touchstart', onTouchStart);
       renderer.domElement.removeEventListener('touchmove', onTouchMove);
       renderer.domElement.removeEventListener('touchend', onTouchEnd);
