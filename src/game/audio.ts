@@ -1,10 +1,62 @@
 import type { SurfaceMaterial } from './physics';
+import type { MadukaAiState } from './types';
 
 export interface DynamicFootstepParams {
   surface: SurfaceMaterial;
   speedRatio: number; // ~0.4 crouch .. 1.0 walk .. 1.6 sprint
   crouching: boolean;
   sprinting: boolean;
+}
+
+export interface ProximityCueParams {
+  active: boolean;
+  intensity: number; // 0..1
+  volume: number; // 0..0.24 (louder as lecturer gets closer)
+  intervalSec: number; // shorter pulse interval as lecturer approaches
+  pitchHz: number;
+  isChase: boolean;
+}
+
+export function computeProximityCueParams(
+  distanceMeters: number,
+  aiState: MadukaAiState,
+  lockdownTriggered: boolean,
+): ProximityCueParams {
+  const maxRange = 13.5;
+  const minRange = 2.0;
+  if (!lockdownTriggered || distanceMeters > maxRange) {
+    return {
+      active: false,
+      intensity: 0,
+      volume: 0,
+      intervalSec: 1.35,
+      pitchHz: 46,
+      isChase: false,
+    };
+  }
+
+  const normalized = Math.max(0, Math.min(1, (maxRange - distanceMeters) / (maxRange - minRange)));
+  const stateMultiplier =
+    aiState === 'CHASE'
+      ? 1.24
+      : aiState === 'INVESTIGATE' || aiState === 'SEARCH'
+        ? 1.1
+        : aiState === 'SUSPICIOUS'
+          ? 1.02
+          : 0.9;
+  const intensity = Math.max(0.06, Math.min(1, normalized * stateMultiplier));
+  const volume = Number((0.024 + Math.pow(intensity, 1.35) * 0.21).toFixed(4));
+  const intervalSec = Number((1.18 - intensity * 0.88).toFixed(3));
+  const pitchHz = Math.round(46 + intensity * 42);
+
+  return {
+    active: true,
+    intensity,
+    volume,
+    intervalSec,
+    pitchHz,
+    isChase: aiState === 'CHASE',
+  };
 }
 
 export class GameAudioEngine {
@@ -396,6 +448,53 @@ export class GameAudioEngine {
       osc.start(now + i * 0.09);
       osc.stop(now + i * 0.09 + 0.08);
     });
+  }
+
+  public playProximityWarning(params: ProximityCueParams): void {
+    if (!params.active) return;
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const vol = Math.max(0.015, Math.min(0.24, params.volume));
+
+    // Double heartbeat thump ("lub-dub") that speeds up and grows louder as lecturer approaches
+    [0, 0.115].forEach((offset, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      const beatStart = idx === 0 ? params.pitchHz : params.pitchHz * 0.86;
+      osc.frequency.setValueAtTime(beatStart, now + offset);
+      osc.frequency.exponentialRampToValueAtTime(28, now + offset + 0.095);
+
+      const beatVol = idx === 0 ? vol : vol * 0.72;
+      gain.gain.setValueAtTime(beatVol, now + offset);
+      gain.gain.exponentialRampToValueAtTime(0.0008, now + offset + 0.105);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + offset);
+      osc.stop(now + offset + 0.11);
+    });
+
+    // Subtle horror string tension shimmer when close or actively chased
+    if (params.intensity >= 0.42 || params.isChase) {
+      const stingOsc = ctx.createOscillator();
+      const stingGain = ctx.createGain();
+      stingOsc.type = params.isChase ? 'sawtooth' : 'triangle';
+      const stingBase = 210 + params.intensity * 190;
+      stingOsc.frequency.setValueAtTime(stingBase, now);
+      stingOsc.frequency.exponentialRampToValueAtTime(stingBase * 1.12, now + 0.14);
+
+      const stingVol = vol * (params.isChase ? 0.34 : 0.2);
+      stingGain.gain.setValueAtTime(stingVol, now);
+      stingGain.gain.exponentialRampToValueAtTime(0.0008, now + 0.15);
+
+      stingOsc.connect(stingGain);
+      stingGain.connect(ctx.destination);
+      stingOsc.start(now);
+      stingOsc.stop(now + 0.16);
+    }
   }
 
   public dispose(): void {

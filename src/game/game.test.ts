@@ -7,7 +7,13 @@ import {
   resolvePlayerCollision,
 } from './worldLayout';
 import { createMadukaBrain, stepMadukaAi } from './madukaAi';
-import { createDefaultSave, loadGameProgress, saveGameProgress } from './saveSystem';
+import {
+  createDefaultSave,
+  getHighestUnlockedLevel,
+  isLevelUnlocked,
+  loadGameProgress,
+  saveGameProgress,
+} from './saveSystem';
 import {
   PLAYABLE_AVATARS,
   createPaperAirplane,
@@ -358,11 +364,12 @@ test('physics engine allows jumping onto/over desks, tactical rolling, and detec
 
 import { CAMPAIGN_LEVELS, getLevelDef } from './levels';
 
-test('10 crazy campaign levels have valid geometry, unique themes, and all 5 Blackwood NPCs', () => {
-  assert.equal(CAMPAIGN_LEVELS.length, 10);
+test('10 class levels + Principal finale have valid geometry, unique themes, and distinct lecturers', () => {
+  assert.equal(CAMPAIGN_LEVELS.length, 11);
 
   const npcsSeen = new Set<string>();
   const titlesSeen = new Set<string>();
+  const classLecturerIds = new Set<string>();
 
   for (let i = 0; i < CAMPAIGN_LEVELS.length; i++) {
     const lvl = CAMPAIGN_LEVELS[i];
@@ -370,10 +377,21 @@ test('10 crazy campaign levels have valid geometry, unique themes, and all 5 Bla
     assert.ok(!titlesSeen.has(lvl.title), `Duplicate title: ${lvl.title}`);
     titlesSeen.add(lvl.title);
 
-    assert.ok(lvl.npcs.length >= 2, `Level ${lvl.id} should feature at least 2 NPCs`);
-    assert.ok(lvl.patrolRoute.length >= 4, `Level ${lvl.id} needs >= 4 Maduka patrol waypoints`);
+    if (lvl.id <= 10) {
+      assert.ok(
+        !classLecturerIds.has(lvl.lecturerId),
+        `Duplicate class lecturer ${lvl.lecturerId} on Level ${lvl.id}`,
+      );
+      classLecturerIds.add(lvl.lecturerId);
+      assert.notEqual(lvl.lecturerId, 'principal');
+    } else {
+      assert.equal(lvl.lecturerId, 'principal');
+    }
 
-    // Player spawn and Maduka spawn must be free of colliders
+    assert.ok(lvl.npcs.length >= 2, `Level ${lvl.id} should feature at least 2 NPCs`);
+    assert.ok(lvl.patrolRoute.length >= 4, `Level ${lvl.id} needs >= 4 patrol waypoints`);
+
+    // Player spawn and lecturer spawn must be free of colliders
     const pSpawnCheck = resolvePlayerCollision(
       lvl.playerSpawn.x,
       lvl.playerSpawn.z,
@@ -413,23 +431,26 @@ test('10 crazy campaign levels have valid geometry, unique themes, and all 5 Bla
     assert.ok(lvl.interactables.some((it) => it.itemId === 'rear_exit_key'), `Level ${lvl.id} missing key`);
   }
 
+  assert.equal(classLecturerIds.size, 10, 'Expected 10 distinct class lecturers before Principal');
+
   for (const requiredNpc of ['daniel', 'amara', 'victor', 'nneka', 'bako']) {
-    assert.ok(npcsSeen.has(requiredNpc), `Missing NPC ${requiredNpc} across 10-level campaign`);
+    assert.ok(npcsSeen.has(requiredNpc), `Missing NPC ${requiredNpc} across campaign`);
   }
 
-  // Test Level 2 custom emerald carpet zone & Level 10 custom fast Maduka patrol
+  // Test Level 2 custom emerald carpet zone & Level 11 Principal Sanctum patrol
   const lvl2 = getLevelDef(2);
   assert.equal(getSurfaceAt(-4.0, 0, 0, lvl2.colliders, 0.42, lvl2.carpetZones), 'carpet');
   assert.equal(getSurfaceAt(0, 0, 0, lvl2.colliders, 0.42, lvl2.carpetZones), 'concrete_tile');
 
-  const lvl10 = getLevelDef(10);
-  assert.equal(lvl10.npcs.length, 4, 'Finale Level 10 rallies all 4 allies');
-  let b10 = createMadukaBrain(lvl10.madukaSpawn);
-  const step10 = stepMadukaAi(
-    b10,
+  const lvl11 = getLevelDef(11);
+  assert.equal(lvl11.npcs.length, 4, 'Principal Sanctum rallies all 4 allies');
+  assert.equal(lvl11.lecturerId, 'principal');
+  let b11 = createMadukaBrain(lvl11.madukaSpawn);
+  const step11 = stepMadukaAi(
+    b11,
     {
-      playerX: lvl10.playerSpawn.x,
-      playerZ: lvl10.playerSpawn.z,
+      playerX: lvl11.playerSpawn.x,
+      playerZ: lvl11.playerSpawn.z,
       playerCrouching: false,
       playerHidden: true,
       flashlightOn: false,
@@ -438,12 +459,12 @@ test('10 crazy campaign levels have valid geometry, unique themes, and all 5 Bla
     },
     'standard',
     0.05,
-    lvl10.colliders,
-    lvl10.patrolRoute,
-    lvl10.madukaSpeedMultiplier,
+    lvl11.colliders,
+    lvl11.patrolRoute,
+    lvl11.madukaSpeedMultiplier,
   );
-  b10 = step10.next;
-  assert.equal(b10.aiState, 'PATROL');
+  b11 = step11.next;
+  assert.equal(b11.aiState, 'PATROL');
 });
 
 test('sprint physics increases speed over walking, drains stamina, and recovers when stationary', () => {
@@ -512,18 +533,30 @@ test('sprint physics increases speed over walking, drains stamina, and recovers 
   assert.ok(recoverStep.staminaDelta > 0, 'Standing still should regenerate stamina even if sprint key held');
 });
 
-import { LECTURERS, getLecturerDef } from './lecturers';
+import { LECTURERS, getLecturerDef, getLecturerForLevel } from './lecturers';
+import { computeProximityCueParams } from './audio';
 
-test('lecturers catalog includes Prof. Maduka and red-eyed wicked Sociology lecturer Mrs. Misa', () => {
-  assert.equal(LECTURERS.length, 2);
+test('lecturers catalog includes 10 distinct class lecturers + Principal Blackwood with cutting-edge stories', () => {
+  assert.equal(LECTURERS.length, 11);
+  const stories = new Set<string>();
+  LECTURERS.forEach((lec, idx) => {
+    assert.equal(lec.assignedLevelId, idx + 1);
+    assert.ok(lec.storyHook.length > 35, `${lec.id} needs a cutting-edge storyHook`);
+    assert.ok(!stories.has(lec.storyHook), `Duplicate storyHook on ${lec.id}`);
+    stories.add(lec.storyHook);
+  });
+
   const maduka = getLecturerDef('maduka');
   const misa = getLecturerDef('misa');
+  const principal = getLecturerDef('principal');
 
   assert.equal(maduka.department, 'Computer Science');
   assert.equal(misa.name, 'Mrs. Misa');
   assert.equal(misa.department, 'Sociology');
   assert.equal(misa.eyeColor, '#ff1e2d');
   assert.ok(misa.speedMultiplier > maduka.speedMultiplier);
+  assert.equal(principal.isPrincipal, true);
+  assert.equal(getLecturerForLevel(11).id, 'principal');
 
   // Verify stepMadukaAi emits Mrs. Misa's wicked sociology lines when selected
   let brain = createMadukaBrain();
@@ -549,4 +582,41 @@ test('lecturers catalog includes Prof. Maduka and red-eyed wicked Sociology lect
   assert.equal(chaseStep.next.aiState, 'CHASE');
   assert.ok(misa.lines.chase.includes(chaseStep.next.activeLine ?? ''));
 });
+
+test('sequential level unlocking enforces clearing previous level before next unlocks', () => {
+  assert.equal(isLevelUnlocked(1, []), true);
+  assert.equal(isLevelUnlocked(2, []), false);
+  assert.equal(isLevelUnlocked(11, [1, 2, 3]), false);
+  assert.equal(getHighestUnlockedLevel([], 11), 1);
+
+  assert.equal(isLevelUnlocked(2, [1]), true);
+  assert.equal(isLevelUnlocked(3, [1]), false);
+  assert.equal(getHighestUnlockedLevel([1], 11), 2);
+
+  assert.equal(isLevelUnlocked(11, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), true);
+  assert.equal(getHighestUnlockedLevel([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 11), 11);
+});
+
+test('proximity warning audio cue scales louder and faster as lecturer approaches', () => {
+  const preLockdown = computeProximityCueParams(3.0, 'PATROL', false);
+  assert.equal(preLockdown.active, false);
+
+  const outOfRange = computeProximityCueParams(15.0, 'PATROL', true);
+  assert.equal(outOfRange.active, false);
+
+  const far = computeProximityCueParams(11.0, 'PATROL', true);
+  const mid = computeProximityCueParams(6.0, 'INVESTIGATE', true);
+  const closeChase = computeProximityCueParams(2.5, 'CHASE', true);
+
+  assert.equal(far.active, true);
+  assert.equal(mid.active, true);
+  assert.equal(closeChase.active, true);
+
+  assert.ok(mid.volume > far.volume, 'Volume should increase as lecturer moves from 11m to 6m');
+  assert.ok(closeChase.volume > mid.volume, 'Volume should peak during close CHASE');
+  assert.ok(mid.intervalSec < far.intervalSec, 'Pulse interval should tighten as lecturer closes in');
+  assert.ok(closeChase.intervalSec < mid.intervalSec, 'Pulse interval should be fastest during close CHASE');
+  assert.equal(closeChase.isChase, true);
+});
+
 

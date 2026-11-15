@@ -4,7 +4,18 @@ import type { SurfaceMaterial } from './physics';
 export type GamePhase = 'title' | 'playing' | 'paused' | 'victory' | 'gameover';
 export type DifficultyLevel = 'relaxed' | 'standard' | 'honors';
 export type StudentRank = 'S' | 'A' | 'B' | 'C';
-export type LecturerId = 'maduka' | 'misa';
+export type LecturerId =
+  | 'maduka'
+  | 'misa'
+  | 'balogun'
+  | 'nwankwo'
+  | 'babatunde'
+  | 'osei'
+  | 'danjuma'
+  | 'adeyemi'
+  | 'coker'
+  | 'musa'
+  | 'principal';
 
 export type MadukaAiState =
   | 'PATROL'
@@ -113,6 +124,7 @@ export interface LevelDef {
   subtitle: string;
   crazyTwist: string;
   gimmickTag: string;
+  lecturerId: LecturerId;
   startsInLockdown: boolean;
   requiresPowerRestore: boolean;
   madukaSpeedMultiplier: number;

@@ -5,7 +5,8 @@ import {
   getAvatarDef,
 } from '../game/avatarSystem';
 import { CAMPAIGN_LEVELS, getLevelDef } from '../game/levels';
-import { LECTURERS, getLecturerDef } from '../game/lecturers';
+import { LECTURERS, LecturerDef, getLecturerDef } from '../game/lecturers';
+import { isLevelUnlocked } from '../game/saveSystem';
 import {
   DifficultyLevel,
   LecturerId,
@@ -35,6 +36,60 @@ const JACKET_SWATCHES = [
   { label: 'Library Emerald', color: '#246b5c' },
 ];
 
+function hexFromInt(colorInt: number): string {
+  return `#${colorInt.toString(16).padStart(6, '0')}`;
+}
+
+function LecturerPortraitSvg({ lecturer }: { lecturer: LecturerDef }) {
+  const { visual, accentColor } = lecturer;
+  const jacketHex = hexFromInt(visual.jacketColor);
+  const eyeHex = visual.eyeGlowColor ? hexFromInt(visual.eyeGlowColor) : '#ffffff';
+  const mouthHex = visual.eyeGlowColor ? eyeHex : accentColor;
+
+  return (
+    <svg viewBox="0 0 28 28" className="w-7 h-7 shrink-0" aria-hidden="true">
+      <rect
+        x="4"
+        y="6"
+        width="20"
+        height="18"
+        rx="4"
+        fill={jacketHex}
+        stroke={accentColor}
+        strokeWidth="1.6"
+      />
+      {visual.silhouette === 'principal' && (
+        <path
+          d="M7 6l3-3.5 4 2.5 4-2.5L21 6z"
+          fill="#fbbf24"
+          stroke="#fef08a"
+          strokeWidth="0.8"
+        />
+      )}
+      {visual.hasBun && <circle cx="14" cy="4.2" r="2.8" fill={hexFromInt(visual.hairColor)} />}
+      {visual.hasCapOrCrown && visual.silhouette !== 'principal' && (
+        <rect x="6" y="3.5" width="16" height="3" rx="1" fill={accentColor} />
+      )}
+      <rect x="7.8" y="12.2" width="3.8" height="2.4" rx="0.6" fill={eyeHex} />
+      <rect x="16.4" y="12.2" width="3.8" height="2.4" rx="0.6" fill={eyeHex} />
+      {visual.hasGlasses && (
+        <g stroke="#d4d4d8" strokeWidth="0.9" fill="none">
+          <rect x="7.1" y="11.5" width="5.2" height="3.8" rx="0.8" />
+          <rect x="15.7" y="11.5" width="5.2" height="3.8" rx="0.8" />
+          <line x1="12.3" y1="13.2" x2="15.7" y2="13.2" />
+        </g>
+      )}
+      <path
+        d={visual.silhouette === 'female' ? 'M9.5 18.5q4.5 1.8 9-0.4' : 'M10 18.5h8'}
+        stroke={mouthHex}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  );
+}
+
 export function TitleScreen({
   profile,
   difficulty,
@@ -49,10 +104,12 @@ export function TitleScreen({
   onStartGame,
 }: TitleScreenProps) {
   const [showControls, setShowControls] = useState(false);
+  const [showRoster, setShowRoster] = useState(false);
   const activeAvatar = getAvatarDef(profile.avatarId);
   const activeLevel = getLevelDef(selectedLevelId);
   const activeLecturer = getLecturerDef(selectedLecturerId);
-  const completedSet = new Set(savedRun?.completedLevels ?? []);
+  const completedLevels = savedRun?.completedLevels ?? [];
+  const completedSet = new Set(completedLevels);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -67,13 +124,13 @@ export function TitleScreen({
   }, [onStartGame]);
 
   return (
-    <div className="fixed inset-0 z-20 pointer-events-none flex flex-col justify-between p-4 sm:p-6 lg:p-8 overflow-y-auto bg-gradient-to-r from-[#0a0d12]/95 via-[#0a0d12]/72 to-[#0a0d12]/15">
-      <div className="max-w-xl space-y-2.5 sm:space-y-3 my-auto pointer-events-auto">
+    <div className="fixed inset-0 z-20 pointer-events-none flex flex-col justify-between p-4 sm:p-5 lg:p-6 overflow-y-auto bg-gradient-to-r from-[#0a0d12]/95 via-[#0a0d12]/72 to-[#0a0d12]/15">
+      <div className="max-w-2xl space-y-2 sm:space-y-2.5 my-auto pointer-events-auto">
         {/* Custom Inline SVG Academic Emblem & Title Lockup */}
-        <div className="flex items-center gap-3.5">
+        <div className="flex items-center gap-3">
           <svg
             viewBox="0 0 48 48"
-            className="w-9 h-9 shrink-0"
+            className="w-8 h-8 shrink-0"
             aria-hidden="true"
           >
             <path
@@ -93,160 +150,195 @@ export function TitleScreen({
             <circle cx="24" cy="14" r="2.2" fill="#d99b43" />
           </svg>
           <div className="text-xs font-mono tracking-wider text-[#d99b43]">
-            BLACKWOOD UNIVERSITY · 10 CRAZY LEVELS
+            BLACKWOOD UNIVERSITY · 10 LECTURERS + THE PRINCIPAL
           </div>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <h1 className="font-serif text-3xl sm:text-4xl font-semibold tracking-tight text-[#efece6] leading-[1.06] [text-wrap:balance]">
             Escape the Crazy Lecturer
           </h1>
           <p className="text-xs sm:text-sm text-[#b8c0c8] leading-relaxed">
-            Outrun {activeLecturer.shortName} ({activeLecturer.department}) across 10 wild campus
-            wings with Daniel, Amara, Nneka, Mr. Bako &amp; Victor.
+            Outrun the professors of each class to graduate.
           </p>
         </div>
 
-        {/* Choose Lecturer (Antagonist) Section */}
+        {/* Active Class Hunter Dossier + Collapsible 10 Lecturers + Principal Roster */}
         <section
-          aria-label="Choose Lecturer"
-          className="bg-[#0e1116]/94 border border-white/10 rounded-lg p-3 sm:p-3.5 space-y-2"
+          aria-label="Class Hunter and Story"
+          className="bg-[#0e1116]/94 border border-white/10 rounded-lg p-2.5 sm:p-3 space-y-2"
         >
-          <div className="flex items-center justify-between text-xs text-[#9aa3ad]">
-            <span>Choose Lecturer (Hunter)</span>
-            <span
-              className="font-mono font-semibold"
-              style={{ color: activeLecturer.accentColor }}
-            >
-              {activeLecturer.courseCode} · {activeLecturer.traitBadge}
-            </span>
+          <div className="flex items-center justify-between gap-2 text-xs text-[#9aa3ad]">
+            <span>Class Hunter &amp; Story</span>
+            <div className="flex items-center gap-2">
+              <span
+                className="font-mono font-semibold"
+                style={{ color: activeLecturer.accentColor }}
+              >
+                {activeLecturer.courseCode} · {activeLecturer.traitBadge}
+              </span>
+              <button
+                type="button"
+                data-roster-toggle="true"
+                aria-expanded={showRoster}
+                onClick={() => setShowRoster((v) => !v)}
+                className={`px-2 py-0.5 text-[11px] font-mono rounded border transition-colors cursor-pointer ${
+                  showRoster
+                    ? 'bg-[#231b10] border-[#d99b43] text-[#efece6]'
+                    : 'bg-[#090b0f] border-white/15 text-[#cfd4da] hover:border-white/35'
+                }`}
+              >
+                {showRoster ? 'Hide Roster' : 'Roster (10 + Principal)'}
+              </button>
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {LECTURERS.map((lec) => {
-              const selected = lec.id === selectedLecturerId;
-              const isMisa = lec.id === 'misa';
-              return (
-                <button
-                  key={lec.id}
-                  type="button"
-                  data-lecturer-select={lec.id}
-                  onClick={() => onLecturerChange(lec.id)}
-                  className={`p-2.5 text-left rounded-md border transition-colors cursor-pointer ${
-                    selected
-                      ? isMisa
-                        ? 'bg-[#2a0c14] border-[#ef4444] text-[#efece6]'
-                        : 'bg-[#231b10] border-[#d99b43] text-[#efece6]'
-                      : 'bg-[#090b0f] border-white/10 text-[#cfd4da] hover:border-white/30'
-                  }`}
+
+          <div className="flex items-start gap-2.5 p-2 rounded-md bg-[#090b0f]/90 border border-white/10">
+            <LecturerPortraitSvg lecturer={activeLecturer} />
+            <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
+                <span className="text-xs sm:text-sm font-semibold text-[#efece6]">
+                  {activeLecturer.name}
+                </span>
+                <span
+                  className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+                  style={{
+                    backgroundColor: `${activeLecturer.accentColor}24`,
+                    color: activeLecturer.accentColor,
+                  }}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <svg
-                        viewBox="0 0 24 24"
-                        className="w-5 h-5 shrink-0"
-                        aria-hidden="true"
-                      >
-                        <rect
-                          x="4"
-                          y="4"
-                          width="16"
-                          height="16"
-                          rx="3"
-                          fill={isMisa ? '#351022' : '#26272c'}
-                          stroke={lec.accentColor}
-                          strokeWidth="1.5"
-                        />
-                        {isMisa && (
-                          <circle cx="12" cy="3.5" r="2.5" fill="#140f17" />
-                        )}
-                        <rect
-                          x="7.2"
-                          y="10"
-                          width="3.2"
-                          height="2.2"
-                          rx="0.5"
-                          fill={isMisa ? '#ff1e2d' : '#ffffff'}
-                        />
-                        <rect
-                          x="13.6"
-                          y="10"
-                          width="3.2"
-                          height="2.2"
-                          rx="0.5"
-                          fill={isMisa ? '#ff1e2d' : '#ffffff'}
-                        />
-                        <path
-                          d={isMisa ? 'M8 15.5q4 1.5 8-0.5' : 'M9 15.5h6'}
-                          stroke={isMisa ? '#b91c1c' : '#d99b43'}
-                          strokeWidth="1.4"
-                          fill="none"
-                        />
-                      </svg>
-                      <span className="text-xs font-semibold truncate">{lec.shortName}</span>
-                    </div>
-                    <span
-                      className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 ${
-                        isMisa
-                          ? 'bg-[#ef4444]/20 text-[#fca5a5]'
-                          : 'bg-[#d99b43]/20 text-[#fcd34d]'
-                      }`}
-                    >
-                      {lec.department}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-[#b8c0c8] mt-1 leading-snug">
-                    {lec.description}
-                  </div>
-                </button>
-              );
-            })}
+                  {activeLecturer.isPrincipal ? 'FINAL BOSS · PRINCIPAL' : `LVL ${String(activeLecturer.assignedLevelId).padStart(2, '0')} · ${activeLecturer.department}`}
+                </span>
+              </div>
+              <p className="text-[11px] text-[#cfd4da] leading-snug">
+                {activeLecturer.storyHook}
+              </p>
+            </div>
           </div>
+
+          {showRoster && (
+            <div
+              data-roster-drawer="true"
+              className="max-h-52 overflow-y-auto space-y-1.5 pr-1 border-t border-white/10 pt-2"
+            >
+              {LECTURERS.map((lec) => {
+                const unlocked = isLevelUnlocked(lec.assignedLevelId, completedLevels);
+                const cleared = completedSet.has(lec.assignedLevelId);
+                const selected = lec.assignedLevelId === selectedLevelId;
+                return (
+                  <button
+                    key={lec.id}
+                    type="button"
+                    disabled={!unlocked}
+                    data-roster-lecturer={lec.id}
+                    data-roster-locked={String(!unlocked)}
+                    onClick={() => {
+                      onLevelChange(lec.assignedLevelId);
+                      onLecturerChange(lec.id);
+                    }}
+                    className={`w-full flex items-start gap-2.5 p-2 text-left rounded-md border transition-colors ${
+                      !unlocked
+                        ? 'bg-[#080a0e] border-white/5 text-[#7a828c] opacity-60 cursor-not-allowed'
+                        : selected
+                          ? 'bg-[#231b10] border-[#d99b43] text-[#efece6] cursor-pointer'
+                          : 'bg-[#090b0f] border-white/10 text-[#cfd4da] hover:border-white/30 cursor-pointer'
+                    }`}
+                  >
+                    <LecturerPortraitSvg lecturer={lec} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold truncate">
+                          {lec.isPrincipal
+                            ? `BOSS 11 · ${lec.shortName}`
+                            : `LVL ${String(lec.assignedLevelId).padStart(2, '0')} · ${lec.shortName}`}
+                        </span>
+                        <span className="text-[10px] font-mono shrink-0">
+                          {!unlocked
+                            ? `🔒 Clear LVL ${String(lec.assignedLevelId - 1).padStart(2, '0')}`
+                            : cleared
+                              ? '✓ Cleared'
+                              : `${lec.courseCode} · ${lec.department}`}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#9aa3ad] leading-snug mt-0.5">
+                        {lec.storyHook}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </section>
 
-        {/* 10 Crazy Levels Selector */}
-        <div className="bg-[#0e1116]/94 border border-white/10 rounded-lg p-3 sm:p-3.5 space-y-2.5">
-          <div className="flex items-center justify-between text-xs text-[#9aa3ad]">
-            <span>Select Level (1–10)</span>
+        {/* 10 Class Levels + Principal Finale Selector (Sequential Locking) */}
+        <div className="bg-[#0e1116]/94 border border-white/10 rounded-lg p-2.5 sm:p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2 text-xs text-[#9aa3ad]">
+            <span>Select Level (1–10 + Principal)</span>
             <span className="font-mono text-[#d99b43]">
-              {activeLevel.gimmickTag} · {completedSet.size}/10 Cleared
+              {completedSet.size}/{CAMPAIGN_LEVELS.length} Cleared · Pass each class to unlock the next
             </span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-1.5">
             {CAMPAIGN_LEVELS.map((lvl) => {
+              const unlocked = isLevelUnlocked(lvl.id, completedLevels);
               const selected = lvl.id === selectedLevelId;
               const cleared = completedSet.has(lvl.id);
+              const lvlLecturer = getLecturerDef(lvl.lecturerId);
+              const isPrincipal = Boolean(lvlLecturer.isPrincipal);
+
               return (
                 <button
                   key={lvl.id}
                   type="button"
+                  disabled={!unlocked}
                   data-level-select={lvl.id}
+                  data-level-locked={String(!unlocked)}
+                  aria-label={
+                    unlocked
+                      ? `${lvl.shortCode} ${lvl.title} — ${lvlLecturer.shortName}`
+                      : `${lvl.shortCode} ${lvl.title} — Locked until LVL ${String(lvl.id - 1).padStart(2, '0')} cleared`
+                  }
                   onClick={() => onLevelChange(lvl.id)}
-                  className={`px-2 py-1.5 text-left rounded-md border transition-colors cursor-pointer ${
-                    selected
-                      ? 'bg-[#d99b43] text-[#0e1114] border-[#d99b43]'
-                      : 'bg-[#090b0f] text-[#cfd4da] border-white/10 hover:border-white/30'
+                  className={`px-2 py-1.5 text-left rounded-md border transition-colors ${
+                    !unlocked
+                      ? 'bg-[#080a0e] text-[#6d7580] border-white/5 opacity-55 cursor-not-allowed'
+                      : selected
+                        ? isPrincipal
+                          ? 'bg-[#fbbf24] text-[#0e1114] border-[#fbbf24] cursor-pointer'
+                          : 'bg-[#d99b43] text-[#0e1114] border-[#d99b43] cursor-pointer'
+                        : isPrincipal
+                          ? 'bg-[#1a150b] text-[#fde68a] border-[#fbbf24]/35 hover:border-[#fbbf24] cursor-pointer'
+                          : 'bg-[#090b0f] text-[#cfd4da] border-white/10 hover:border-white/30 cursor-pointer'
                   }`}
                 >
                   <div className="flex items-center justify-between text-[10px] font-mono font-semibold">
                     <span>{lvl.shortCode}</span>
-                    {cleared && (
+                    {cleared ? (
                       <span className={selected ? 'text-[#0e1114]' : 'text-[#34d399]'}>✓</span>
-                    )}
+                    ) : !unlocked ? (
+                      <span aria-hidden="true">🔒</span>
+                    ) : null}
                   </div>
                   <div className="text-[11px] font-medium truncate mt-0.5">{lvl.title}</div>
+                  <div
+                    className={`text-[10px] truncate ${
+                      selected
+                        ? 'text-[#0e1114]/80 font-medium'
+                        : unlocked
+                          ? 'text-[#9aa3ad]'
+                          : 'text-[#5b626c]'
+                    }`}
+                  >
+                    {lvlLecturer.shortName}
+                  </div>
                 </button>
               );
             })}
           </div>
-          <div className="text-[11px] text-[#b8c0c8] leading-snug pt-0.5">
-            <span className="text-[#efece6] font-medium">
-              {selectedLevelId === 1 && selectedLecturerId === 'misa'
-                ? '17 Minutes Late to SOC-204:'
-                : `${activeLevel.subtitle}:`}
-            </span>{' '}
-            {selectedLevelId === 1 && selectedLecturerId === 'misa'
-              ? 'Collect Mrs. Misa’s sociology folder to trigger lockdown—Daniel & Amara have campus tips!'
-              : activeLevel.crazyTwist}{' '}
+          <div className="text-[11px] text-[#b8c0c8] leading-snug">
+            <span className="text-[#efece6] font-medium">{activeLevel.subtitle}:</span>{' '}
+            {activeLevel.crazyTwist}{' '}
             <span className="text-[#d99b43] font-mono">
               [Cast: {activeLevel.npcs.map((n) => (n.name.startsWith('Mr.') ? n.name : n.name.split(' ')[0])).join(', ')}]
             </span>
@@ -254,7 +346,7 @@ export function TitleScreen({
         </div>
 
         {/* Playable Student Avatar Picker + Customization */}
-        <div className="bg-[#0e1116]/92 border border-white/10 rounded-lg p-3 sm:p-3.5 space-y-3">
+        <div className="bg-[#0e1116]/92 border border-white/10 rounded-lg p-2.5 sm:p-3 space-y-2.5">
           <div>
             <div className="flex items-center justify-between text-xs text-[#9aa3ad] mb-1.5">
               <span>Playable Student Avatar</span>

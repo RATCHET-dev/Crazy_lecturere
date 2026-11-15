@@ -9,6 +9,9 @@ import {
 } from './game/types';
 import {
   createDefaultSave,
+  getHighestUnlockedLevel,
+  isLevelUnlocked,
+  isValidLecturerId,
   loadGameProgress,
   saveGameProgress,
 } from './game/saveSystem';
@@ -22,10 +25,10 @@ import { GameModals } from './components/GameModals';
 function buildInitialHudForLevel(
   levelId: number,
   rank: ProtagonistProfile['rank'] = 'C',
-  lecturerId: LecturerId = 'maduka',
+  lecturerId?: LecturerId,
 ): GameHudSnapshot {
   const lvl = getLevelDef(levelId);
-  const lecturer = getLecturerDef(lecturerId);
+  const lecturer = getLecturerDef(lecturerId ?? lvl.lecturerId);
   return {
     levelId: lvl.id,
     totalLevels: CAMPAIGN_LEVELS.length,
@@ -79,20 +82,29 @@ export default function App() {
     () => savedRun?.difficulty ?? 'standard',
   );
   const [selectedLevelId, setSelectedLevelId] = useState<number>(() => {
+    const completed = savedRun?.completedLevels ?? [];
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const lvlParam = Number(params.get('level'));
-      if (lvlParam >= 1 && lvlParam <= CAMPAIGN_LEVELS.length) return lvlParam;
+      if (
+        lvlParam >= 1 &&
+        lvlParam <= CAMPAIGN_LEVELS.length &&
+        isLevelUnlocked(lvlParam, completed)
+      ) {
+        return lvlParam;
+      }
     }
-    return 1;
+    return getHighestUnlockedLevel(completed, CAMPAIGN_LEVELS.length);
   });
   const [selectedLecturerId, setSelectedLecturerId] = useState<LecturerId>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const lecParam = params.get('lecturer');
-      if (lecParam === 'misa' || lecParam === 'maduka') return lecParam;
+      if (isValidLecturerId(lecParam)) return lecParam;
     }
-    return savedRun?.lecturerId ?? 'maduka';
+    const completed = savedRun?.completedLevels ?? [];
+    const initialLvl = getHighestUnlockedLevel(completed, CAMPAIGN_LEVELS.length);
+    return getLevelDef(initialLvl).lecturerId;
   });
   const [phase, setPhase] = useState<GamePhase>(() => {
     if (typeof window !== 'undefined') {
@@ -170,12 +182,30 @@ export default function App() {
     [],
   );
 
+  const handleSelectLevel = useCallback(
+    (levelId: number) => {
+      const completed = savedRun?.completedLevels ?? [];
+      if (!isLevelUnlocked(levelId, completed)) return;
+      const lvlDef = getLevelDef(levelId);
+      setSelectedLevelId(lvlDef.id);
+      setSelectedLecturerId(lvlDef.lecturerId);
+    },
+    [savedRun],
+  );
+
   const handleStartGame = useCallback(() => {
-    persistProgress(profile, difficulty, selectedLecturerId);
+    const completed = savedRun?.completedLevels ?? [];
+    const safeLevelId = isLevelUnlocked(selectedLevelId, completed)
+      ? selectedLevelId
+      : getHighestUnlockedLevel(completed, CAMPAIGN_LEVELS.length);
+    const activeLecturer = getLevelDef(safeLevelId).lecturerId;
+    const effectiveLecturer = selectedLecturerId || activeLecturer;
+    persistProgress(profile, difficulty, effectiveLecturer);
+    setSelectedLevelId(safeLevelId);
     setRunNonce((n) => n + 1);
-    setHud(buildInitialHudForLevel(selectedLevelId, profile.rank, selectedLecturerId));
+    setHud(buildInitialHudForLevel(safeLevelId, profile.rank, effectiveLecturer));
     setPhase('playing');
-  }, [profile, difficulty, selectedLecturerId, selectedLevelId, persistProgress]);
+  }, [profile, difficulty, selectedLecturerId, selectedLevelId, savedRun, persistProgress]);
 
   const handleRestart = useCallback(() => {
     setRunNonce((n) => n + 1);
@@ -184,12 +214,16 @@ export default function App() {
   }, [selectedLevelId, profile.rank, selectedLecturerId]);
 
   const handleNextLevel = useCallback(() => {
+    const completed = savedRun?.completedLevels ?? [];
     const nextLvl = Math.min(CAMPAIGN_LEVELS.length, selectedLevelId + 1);
+    if (!isLevelUnlocked(nextLvl, completed)) return;
+    const nextLecturer = getLevelDef(nextLvl).lecturerId;
     setSelectedLevelId(nextLvl);
+    setSelectedLecturerId(nextLecturer);
     setRunNonce((n) => n + 1);
-    setHud(buildInitialHudForLevel(nextLvl, profile.rank, selectedLecturerId));
+    setHud(buildInitialHudForLevel(nextLvl, profile.rank, nextLecturer));
     setPhase('playing');
-  }, [selectedLevelId, profile.rank, selectedLecturerId]);
+  }, [selectedLevelId, savedRun, profile.rank]);
 
   const handlePhaseChange = useCallback(
     (nextPhase: GamePhase, snapshot: GameHudSnapshot) => {
@@ -254,7 +288,7 @@ export default function App() {
           savedRun={savedRun}
           onProfileChange={setProfile}
           onDifficultyChange={setDifficulty}
-          onLevelChange={setSelectedLevelId}
+          onLevelChange={handleSelectLevel}
           onLecturerChange={setSelectedLecturerId}
           onPreviewEmote={(em) => engineHandleRef.current?.triggerEmote(em)}
           onStartGame={handleStartGame}

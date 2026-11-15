@@ -13,7 +13,7 @@ import {
   NpcDef,
   ProtagonistProfile,
 } from './types';
-import { getLecturerDef } from './lecturers';
+import { LecturerDef, getLecturerDef } from './lecturers';
 import {
   ITEM_CATALOG,
   hasLineOfSight,
@@ -29,7 +29,7 @@ import {
   MadukaBrainState,
   stepMadukaAi,
 } from './madukaAi';
-import { GameAudioEngine } from './audio';
+import { GameAudioEngine, computeProximityCueParams } from './audio';
 import {
   AvatarEmoteId,
   AvatarId,
@@ -322,155 +322,289 @@ function buildMadukaMesh(): {
   return { group, leftLeg, rightLeg, pointerArm, flashlight, flashlightTarget };
 }
 
-function buildMisaMesh(): ReturnType<typeof buildMadukaMesh> {
-  // Wicked female Sociology lecturer Mrs. Misa with glowing red eyes
-  const group = new THREE.Group();
+function buildLecturerMesh(lecturer: LecturerDef): ReturnType<typeof buildMadukaMesh> {
+  if (lecturer.id === 'maduka') return buildMadukaMesh();
 
-  const blazerMat = new THREE.MeshStandardMaterial({ color: 0x351022, roughness: 0.68, metalness: 0.08 });
-  const skirtMat = new THREE.MeshStandardMaterial({ color: 0x210b16, roughness: 0.78, metalness: 0.05 });
-  const blouseMat = new THREE.MeshStandardMaterial({ color: 0x8f1d32, roughness: 0.52 });
-  const heelMat = new THREE.MeshStandardMaterial({ color: 0x160a10, roughness: 0.35, metalness: 0.25 });
-  const skinMat = new THREE.MeshStandardMaterial({ color: 0x845238, roughness: 0.58, metalness: 0.03 });
-  const hairMat = new THREE.MeshStandardMaterial({ color: 0x140f17, roughness: 0.8 });
-  const lipMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.4 });
-  const eyeSocketMat = new THREE.MeshStandardMaterial({ color: 0x1d0408, roughness: 0.4 });
-  const redEyeMat = new THREE.MeshStandardMaterial({
-    color: 0xff1e2d,
-    emissive: 0xff0019,
-    emissiveIntensity: 2.8,
-    roughness: 0.15,
+  const vis = lecturer.visual;
+  const group = new THREE.Group();
+  const isFemale = vis.silhouette === 'female';
+  const isPrincipal = vis.silhouette === 'principal';
+
+  const blazerMat = new THREE.MeshStandardMaterial({
+    color: vis.jacketColor,
+    roughness: isPrincipal ? 0.55 : 0.7,
+    metalness: isPrincipal ? 0.18 : 0.08,
   });
+  const lowerMat = new THREE.MeshStandardMaterial({ color: vis.pantsOrSkirtColor, roughness: 0.78, metalness: 0.05 });
+  const shirtMat = new THREE.MeshStandardMaterial({ color: vis.shirtColor, roughness: 0.55 });
+  const accentMat = new THREE.MeshStandardMaterial({
+    color: vis.tieOrAccentColor,
+    roughness: 0.4,
+    metalness: isPrincipal ? 0.65 : 0.15,
+  });
+  const shoeMat = new THREE.MeshStandardMaterial({ color: 0x160e12, roughness: 0.35, metalness: 0.25 });
+  const skinMat = new THREE.MeshStandardMaterial({ color: vis.skinColor, roughness: 0.58, metalness: 0.03 });
+  const hairMat = new THREE.MeshStandardMaterial({ color: vis.hairColor, roughness: 0.8 });
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x22252c, roughness: 0.25, metalness: 0.82 });
+
+  const eyeSocketMat = new THREE.MeshStandardMaterial({ color: 0x1a080c, roughness: 0.4 });
+  const scleraMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+  const glowEyeMat = vis.eyeGlowColor
+    ? new THREE.MeshStandardMaterial({
+        color: vis.eyeGlowColor,
+        emissive: vis.eyeGlowColor,
+        emissiveIntensity: 2.7,
+        roughness: 0.15,
+      })
+    : new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 });
 
   // Ground contact shadow
   const shadowDisc = new THREE.Mesh(
-    new THREE.CircleGeometry(0.45, 24),
+    new THREE.CircleGeometry(isPrincipal ? 0.54 : 0.45, 24),
     new THREE.MeshBasicMaterial({ color: 0x050608, transparent: true, opacity: 0.45, depthWrite: false }),
   );
   shadowDisc.rotation.x = -Math.PI / 2;
   shadowDisc.position.y = 0.015;
   group.add(shadowDisc);
 
-  // Legs + Stiletto Heels
+  // Legs
   const buildLeg = (xOff: number) => {
     const legPivot = new THREE.Group();
-    legPivot.position.set(xOff, 0.84, 0);
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.78, 0.12), skinMat);
-    leg.position.set(0, -0.39, 0);
+    legPivot.position.set(xOff, 0.85, 0);
+    const leg = new THREE.Mesh(
+      new THREE.BoxGeometry(isFemale ? 0.115 : 0.14, 0.79, isFemale ? 0.125 : 0.16),
+      isFemale ? skinMat : lowerMat,
+    );
+    leg.position.set(0, -0.395, 0);
     leg.castShadow = true;
     legPivot.add(leg);
-    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.07, 0.23), heelMat);
-    shoe.position.set(0, -0.805, 0.04);
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(isFemale ? 0.125 : 0.145, 0.072, 0.24), shoeMat);
+    shoe.position.set(0, -0.81, 0.04);
     shoe.castShadow = true;
     legPivot.add(shoe);
     group.add(legPivot);
     return legPivot;
   };
-  const leftLeg = buildLeg(-0.095);
-  const rightLeg = buildLeg(0.095);
+  const leftLeg = buildLeg(isFemale ? -0.095 : -0.115);
+  const rightLeg = buildLeg(isFemale ? 0.095 : 0.115);
 
-  // Tailored Pencil Skirt (hip flare)
-  const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.21, 0.46, 12), skirtMat);
-  skirt.position.set(0, 0.74, 0);
-  skirt.castShadow = true;
-  group.add(skirt);
+  // Skirt for female lecturers or ceremonial robe lower drape for Principal
+  if (isFemale) {
+    const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.215, 0.46, 12), lowerMat);
+    skirt.position.set(0, 0.74, 0);
+    skirt.castShadow = true;
+    group.add(skirt);
+  } else if (isPrincipal) {
+    const robeSkirt = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 0.7, 12), blazerMat);
+    robeSkirt.position.set(0, 0.62, 0);
+    robeSkirt.castShadow = true;
+    group.add(robeSkirt);
+  }
 
-  // Crimson Silk Blouse + Open Plum Blazer
-  const blouse = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.5, 0.19), blouseMat);
-  blouse.position.set(0, 1.17, 0.01);
-  group.add(blouse);
+  // Torso + Open Blazer + Tie/Sash
+  const torsoW = isFemale ? 0.33 : isPrincipal ? 0.45 : 0.39;
+  const torsoH = isFemale ? 0.51 : 0.57;
+  const torsoY = isFemale ? 1.17 : 1.15;
+
+  const shirtBody = new THREE.Mesh(new THREE.BoxGeometry(torsoW, torsoH, 0.2), shirtMat);
+  shirtBody.position.set(0, torsoY, 0.008);
+  group.add(shirtBody);
 
   for (const side of [-1, 1]) {
-    const lapel = new THREE.Mesh(new THREE.BoxGeometry(0.125, 0.53, 0.21), blazerMat);
-    lapel.position.set(side * 0.12, 1.17, 0);
+    const lapel = new THREE.Mesh(new THREE.BoxGeometry(torsoW * 0.38, torsoH + 0.03, 0.22), blazerMat);
+    lapel.position.set(side * (torsoW * 0.35), torsoY, 0);
     lapel.castShadow = true;
     group.add(lapel);
   }
-  const backBlazer = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.53, 0.1), blazerMat);
-  backBlazer.position.set(0, 1.17, -0.06);
-  backBlazer.castShadow = true;
-  group.add(backBlazer);
+  const backPanel = new THREE.Mesh(new THREE.BoxGeometry(torsoW + 0.04, torsoH + 0.03, 0.1), blazerMat);
+  backPanel.position.set(0, torsoY, -0.06);
+  backPanel.castShadow = true;
+  group.add(backPanel);
+
+  if (isPrincipal) {
+    // Ceremonial gold sash & shoulder mantle
+    const sash = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.56, 0.24), accentMat);
+    sash.position.set(0, 1.16, 0.01);
+    sash.rotation.z = 0.32;
+    group.add(sash);
+    const collarMantle = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.09, 0.27), accentMat);
+    collarMantle.position.set(0, 1.43, 0);
+    group.add(collarMantle);
+  } else if (!isFemale) {
+    const tie = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.34, 0.03), accentMat);
+    tie.position.set(0, 1.24, 0.12);
+    group.add(tie);
+  }
 
   // Left arm
   const leftArm = new THREE.Group();
-  leftArm.position.set(-0.23, 1.39, 0);
-  const leftSleeve = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.5, 0.105), blazerMat);
+  leftArm.position.set(isFemale ? -0.23 : -0.27, 1.38, 0);
+  const leftSleeve = new THREE.Mesh(new THREE.BoxGeometry(isFemale ? 0.095 : 0.11, 0.5, 0.11), blazerMat);
   leftSleeve.position.set(0, -0.24, 0);
   leftArm.add(leftSleeve);
-  const leftHand = new THREE.Mesh(new THREE.SphereGeometry(0.046, 10, 10), skinMat);
+  const leftHand = new THREE.Mesh(new THREE.SphereGeometry(0.048, 10, 10), skinMat);
   leftHand.position.set(0, -0.54, 0);
   leftArm.add(leftHand);
   group.add(leftArm);
 
-  // Right pointer arm holding crimson Sociology grading baton
+  // Right pointer arm + Lecturer-specific handheld prop
   const pointerArm = new THREE.Group();
-  pointerArm.position.set(0.23, 1.39, 0);
-  const rightSleeve = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.5, 0.105), blazerMat);
+  pointerArm.position.set(isFemale ? 0.23 : 0.27, 1.38, 0);
+  const rightSleeve = new THREE.Mesh(new THREE.BoxGeometry(isFemale ? 0.095 : 0.11, 0.5, 0.11), blazerMat);
   rightSleeve.rotation.x = -Math.PI / 4.2;
   rightSleeve.position.set(0, -0.17, 0.15);
   pointerArm.add(rightSleeve);
-  const rightHand = new THREE.Mesh(new THREE.SphereGeometry(0.046, 10, 10), skinMat);
+  const rightHand = new THREE.Mesh(new THREE.SphereGeometry(0.048, 10, 10), skinMat);
   rightHand.position.set(0, -0.39, 0.37);
   pointerArm.add(rightHand);
-  const baton = new THREE.Mesh(
-    new THREE.BoxGeometry(0.026, 0.02, 0.64),
-    new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.35, metalness: 0.2 }),
-  );
-  baton.position.set(0, -0.39, 0.65);
-  pointerArm.add(baton);
+
+  if (vis.prop === 'scepter') {
+    const staff = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.022, 0.022, 0.95, 10),
+      new THREE.MeshStandardMaterial({ color: 0x1e1b18, roughness: 0.4, metalness: 0.5 }),
+    );
+    staff.rotation.x = Math.PI / 2;
+    staff.position.set(0, -0.38, 0.65);
+    pointerArm.add(staff);
+    const orb = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.075),
+      new THREE.MeshStandardMaterial({ color: 0xfde047, emissive: 0xfbbf24, emissiveIntensity: 1.6 }),
+    );
+    orb.position.set(0, -0.38, 1.14);
+    pointerArm.add(orb);
+  } else if (vis.prop === 'tablet' || vis.prop === 'ledger' || vis.prop === 'clipboard') {
+    const board = new THREE.Mesh(
+      new THREE.BoxGeometry(0.22, 0.03, 0.28),
+      new THREE.MeshStandardMaterial({
+        color: vis.prop === 'tablet' ? 0x0ea5e9 : vis.tieOrAccentColor,
+        emissive: vis.prop === 'tablet' ? 0x22d3ee : 0x000000,
+        emissiveIntensity: vis.prop === 'tablet' ? 0.7 : 0,
+        roughness: 0.4,
+      }),
+    );
+    board.position.set(0, -0.39, 0.52);
+    pointerArm.add(board);
+  } else if (vis.prop === 'gavel' || vis.prop === 'ladle') {
+    const handle = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.018, 0.018, 0.48, 8),
+      new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.5 }),
+    );
+    handle.rotation.x = Math.PI / 2;
+    handle.position.set(0, -0.39, 0.58);
+    pointerArm.add(handle);
+    const headProp = new THREE.Mesh(
+      vis.prop === 'ladle' ? new THREE.SphereGeometry(0.075, 10, 10) : new THREE.BoxGeometry(0.14, 0.06, 0.06),
+      new THREE.MeshStandardMaterial({ color: 0x9ca3af, metalness: 0.75, roughness: 0.25 }),
+    );
+    headProp.position.set(0, -0.39, 0.82);
+    pointerArm.add(headProp);
+  } else {
+    const baton = new THREE.Mesh(
+      new THREE.BoxGeometry(0.026, 0.022, 0.62),
+      new THREE.MeshStandardMaterial({
+        color: vis.tieOrAccentColor,
+        emissive: vis.prop === 'stun_rod' ? 0xa855f7 : 0x000000,
+        emissiveIntensity: vis.prop === 'stun_rod' ? 1.1 : 0,
+        roughness: 0.35,
+      }),
+    );
+    baton.position.set(0, -0.39, 0.64);
+    pointerArm.add(baton);
+  }
   group.add(pointerArm);
 
-  // Neck + Head + Wicked Updo Hair + Sharp Brows + Crimson Smirk + GLOWING RED EYES
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.06, 0.12, 10), skinMat);
+  // Neck + Head + Hair + Cap/Crown/Bun + Brows + Eyes + Glasses
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.054, 0.062, 0.12, 10), skinMat);
   neck.position.set(0, 1.49, 0);
   group.add(neck);
 
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.205, 0.24, 0.2), skinMat);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(isFemale ? 0.205 : 0.22, 0.245, 0.205), skinMat);
   head.position.set(0, 1.66, 0);
   head.castShadow = true;
   group.add(head);
 
-  const hairCap = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.09, 0.215), hairMat);
+  const hairCap = new THREE.Mesh(new THREE.BoxGeometry(0.225, 0.088, 0.22), hairMat);
   hairCap.position.set(0, 1.775, -0.008);
   group.add(hairCap);
 
-  const hairBack = new THREE.Mesh(new THREE.BoxGeometry(0.215, 0.24, 0.075), hairMat);
-  hairBack.position.set(0, 1.64, -0.092);
+  const hairBack = new THREE.Mesh(new THREE.BoxGeometry(0.22, isFemale ? 0.23 : 0.17, 0.07), hairMat);
+  hairBack.position.set(0, isFemale ? 1.64 : 1.67, -0.092);
   group.add(hairBack);
 
-  const hairBun = new THREE.Mesh(new THREE.SphereGeometry(0.088, 12, 12), hairMat);
-  hairBun.position.set(0, 1.84, -0.085);
-  group.add(hairBun);
-
-  for (const side of [-1, 1]) {
-    // Wicked angled eyebrows
-    const brow = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.016, 0.02), hairMat);
-    brow.position.set(side * 0.048, 1.702, 0.105);
-    brow.rotation.z = side * -0.22;
-    group.add(brow);
-
-    // Dark socket + bright glowing RED eyes
-    const socket = new THREE.Mesh(new THREE.BoxGeometry(0.048, 0.026, 0.014), eyeSocketMat);
-    socket.position.set(side * 0.046, 1.666, 0.101);
-    group.add(socket);
-
-    const redEye = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.02, 0.018), redEyeMat);
-    redEye.position.set(side * 0.046, 1.666, 0.106);
-    group.add(redEye);
+  if (vis.hasBun) {
+    const bun = new THREE.Mesh(new THREE.SphereGeometry(0.088, 12, 12), hairMat);
+    bun.position.set(0, 1.84, -0.085);
+    group.add(bun);
   }
 
-  // Crimson lipstick smirk
-  const lips = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.016, 0.015), lipMat);
-  lips.position.set(0, 1.592, 0.102);
-  lips.rotation.z = -0.06;
-  group.add(lips);
+  if (vis.hasCapOrCrown) {
+    if (isPrincipal) {
+      // Ceremonial Principal Mortarboard / Crown Cap
+      const capBase = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.13, 0.08, 12), blazerMat);
+      capBase.position.set(0, 1.83, -0.01);
+      group.add(capBase);
+      const board = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.025, 0.34), blazerMat);
+      board.position.set(0, 1.88, -0.01);
+      group.add(board);
+      const tassel = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.14, 0.03), accentMat);
+      tassel.position.set(0.16, 1.82, 0.12);
+      group.add(tassel);
+    } else {
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.06, 0.25), accentMat);
+      cap.position.set(0, 1.82, 0.01);
+      group.add(cap);
+    }
+  }
 
-  // Subtle crimson eye glow light
-  const eyeGlow = new THREE.PointLight(0xff1e2d, 1.5, 2.8, 1.5);
-  eyeGlow.position.set(0, 1.67, 0.22);
-  group.add(eyeGlow);
+  for (const side of [-1, 1]) {
+    const brow = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.017, 0.02), hairMat);
+    brow.position.set(side * 0.048, 1.702, 0.106);
+    brow.rotation.z = side * (isFemale || isPrincipal ? -0.22 : -0.14);
+    group.add(brow);
 
-  // Mrs. Misa crimson-tinted SpotLight beam
-  const flashlight = new THREE.SpotLight(0xffb4b4, 6.8, 18.5, Math.PI / 4.2, 0.48, 1.6);
+    if (vis.eyeGlowColor) {
+      const socket = new THREE.Mesh(new THREE.BoxGeometry(0.048, 0.026, 0.014), eyeSocketMat);
+      socket.position.set(side * 0.046, 1.666, 0.102);
+      group.add(socket);
+      const eyeMesh = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.02, 0.018), glowEyeMat);
+      eyeMesh.position.set(side * 0.046, 1.666, 0.107);
+      group.add(eyeMesh);
+    } else {
+      const sclera = new THREE.Mesh(new THREE.BoxGeometry(0.044, 0.024, 0.014), scleraMat);
+      sclera.position.set(side * 0.048, 1.665, 0.105);
+      group.add(sclera);
+      const pupil = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.018), glowEyeMat);
+      pupil.position.set(side * 0.048, 1.665, 0.109);
+      group.add(pupil);
+    }
+
+    if (vis.hasGlasses) {
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(0.072, 0.044, 0.016), frameMat);
+      frame.position.set(side * 0.049, 1.665, 0.115);
+      group.add(frame);
+    }
+  }
+
+  if (vis.hasGlasses) {
+    const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.036, 0.012, 0.016), frameMat);
+    bridge.position.set(0, 1.668, 0.115);
+    group.add(bridge);
+  }
+
+  if (isFemale) {
+    const lips = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.016, 0.015), accentMat);
+    lips.position.set(0, 1.592, 0.104);
+    lips.rotation.z = -0.06;
+    group.add(lips);
+  }
+
+  if (vis.eyeGlowColor) {
+    const eyeGlow = new THREE.PointLight(vis.eyeGlowColor, 1.45, 2.8, 1.5);
+    eyeGlow.position.set(0, 1.67, 0.22);
+    group.add(eyeGlow);
+  }
+
+  const flashlight = new THREE.SpotLight(vis.spotlightColor, 6.8, 18.5, Math.PI / 4.2, 0.48, 1.6);
   flashlight.position.set(0, 1.55, 0.32);
   const flashlightTarget = new THREE.Object3D();
   flashlightTarget.position.set(0, 0.6, 7.5);
@@ -1259,18 +1393,18 @@ export function GameEngineCanvas({
         levelGroup.add(carpetMesh);
       }
 
-      // Chalkboard (adapts heading/signature quote to active lecturer)
+      // Chalkboard (adapts automatically to level or active lecturer override)
       const lecturerForBoard = getLecturerDef(lecturerIdRef.current);
       const boardHeading =
-        lecturerForBoard.id === 'misa' && lvl.id === 1
-          ? 'BLACKWOOD UNIVERSITY · SOC-204'
+        lecturerForBoard.id !== lvl.lecturerId
+          ? `BLACKWOOD UNIVERSITY · ${lecturerForBoard.courseCode}`
           : lvl.theme.chalkboardHeading;
       const boardLines =
-        lecturerForBoard.id === 'misa' && lvl.id === 1
+        lecturerForBoard.id !== lvl.lecturerId
           ? [
-              'MRS. MISA · SOCIOLOGY (WICKED)',
-              '08:00 AM — DEVIANCE IS UNFORGIVEN',
-              'COLLECT SOC-204 FILE: NE OFFICE',
+              `${lecturerForBoard.name.toUpperCase()} · ${lecturerForBoard.department.toUpperCase()}`,
+              lecturerForBoard.signatureQuote.toUpperCase().slice(0, 56),
+              `ESCAPE ${lecturerForBoard.courseCode} TO ADVANCE!`,
             ]
           : lvl.theme.chalkboardLines;
       activeChalkTex = createChalkboardTex(boardHeading, boardLines);
@@ -1386,15 +1520,24 @@ export function GameEngineCanvas({
       }
     };
 
-    // Antagonist Lecturers (Prof. Maduka + Wicked Red-Eyed Mrs. Misa) & Protagonist 3D Actors
-    const madukaVisual = buildMadukaMesh();
-    const misaVisual = buildMisaMesh();
-    madukaVisual.group.visible = lecturerIdRef.current === 'maduka';
-    misaVisual.group.visible = lecturerIdRef.current === 'misa';
-    scene.add(madukaVisual.group);
-    scene.add(misaVisual.group);
-    const getActiveLecturerVisual = () =>
-      lecturerIdRef.current === 'misa' ? misaVisual : madukaVisual;
+    // Antagonist Lecturers (All 10 Class Lecturers + Principal Blackwood, lazily instantiated) & Protagonist 3D Actors
+    const lecturerVisualCache = new Map<LecturerId, ReturnType<typeof buildMadukaMesh>>();
+    const getOrCreateLecturerVisual = (id: LecturerId): ReturnType<typeof buildMadukaMesh> => {
+      const existing = lecturerVisualCache.get(id);
+      if (existing) return existing;
+      const built = buildLecturerMesh(getLecturerDef(id));
+      lecturerVisualCache.set(id, built);
+      scene.add(built.group);
+      return built;
+    };
+    const showActiveLecturerVisual = (id: LecturerId) => {
+      const activeVis = getOrCreateLecturerVisual(id);
+      for (const [cachedId, vis] of lecturerVisualCache) {
+        vis.group.visible = cachedId === id;
+      }
+      return activeVis;
+    };
+    showActiveLecturerVisual(lecturerIdRef.current);
 
     const protagonistVisual = buildProtagonistMesh(profileRef.current);
     scene.add(protagonistVisual.group);
@@ -1423,9 +1566,8 @@ export function GameEngineCanvas({
     };
 
     syncLecturerRef.current = (id: LecturerId) => {
-      madukaVisual.group.visible = id === 'maduka';
-      misaVisual.group.visible = id === 'misa';
-      if (activeLevel.id === 1 && phaseRef.current === 'title') {
+      showActiveLecturerVisual(id);
+      if (phaseRef.current === 'title') {
         rebuildLevelScene(activeLevel);
       }
     };
@@ -1493,6 +1635,7 @@ export function GameEngineCanvas({
     let elapsedSeconds = 0;
     let alertsTriggered = 0;
     let footstepAccum = 0;
+    let proximityCueTimer = 0;
     let madukaWalkPhase = 0;
     let hudEmitTimer = 0;
     let titleOrbitAngle = 0;
@@ -1654,6 +1797,7 @@ export function GameEngineCanvas({
       elapsedSeconds = 0;
       alertsTriggered = 0;
       footstepAccum = 0;
+      proximityCueTimer = 0;
       beamHitCooldown = 0;
       npcTalkedIds = new Set<string>();
       npcLineSpeaker = null;
@@ -1902,13 +2046,14 @@ export function GameEngineCanvas({
         } else {
           determinedTimer = 1.6;
           if (def.id === 'pickup_merit_memo') {
+            const activeLecturer = getLecturerDef(lecturerIdRef.current);
             madukaBrain = {
               ...madukaBrain,
               activeLine:
                 madukaBrain.activeLine ??
-                (lecturerIdRef.current === 'misa'
-                  ? 'Snooping through confidential records? Mrs. Misa remembers every face.'
-                  : 'Reading confidential Project Merit memos? How very Rank C of you.'),
+                (activeLecturer.id === 'maduka'
+                  ? 'Reading confidential Project Merit memos? How very Rank C of you.'
+                  : `Snooping through confidential records? ${activeLecturer.shortName} remembers every face.`),
               lineTimer: 4.0,
             };
           }
@@ -1976,7 +2121,7 @@ export function GameEngineCanvas({
         const activeLecturer = getLecturerDef(lecturerIdRef.current);
         const lines = PLAYFUL_MADUKA_LINES[emote];
         const chosenLine =
-          activeLecturer.id === 'misa'
+          activeLecturer.id !== 'maduka'
             ? activeLecturer.lines.playfulReact
             : lines[Math.floor(Math.random() * lines.length)];
         const dist = Math.hypot(madukaBrain.x - playerX, madukaBrain.z - playerZ);
@@ -2474,9 +2619,7 @@ export function GameEngineCanvas({
         applyEmotePose(titleBaseYaw, 0, false);
 
         // Active Lecturer stands clearly beside the lectern in front of the chalkboard
-        madukaVisual.group.visible = lecturerIdRef.current === 'maduka';
-        misaVisual.group.visible = lecturerIdRef.current === 'misa';
-        const titleLecturer = getActiveLecturerVisual();
+        const titleLecturer = showActiveLecturerVisual(lecturerIdRef.current);
         titleLecturer.group.position.set(-0.85, 0, -7.6);
         titleLecturer.group.rotation.y = 0.35 + Math.sin(titleOrbitAngle * 1.4) * 0.12;
         titleLecturer.leftLeg.rotation.x = 0;
@@ -2814,11 +2957,9 @@ export function GameEngineCanvas({
           }
         }
 
-        // Step Active Lecturer AI (Prof. Maduka or wicked red-eyed Mrs. Misa)
+        // Step Active Lecturer AI (10 Class Lecturers + Principal Chief O. Blackwood)
         const activeLecturer = getLecturerDef(lecturerIdRef.current);
-        madukaVisual.group.visible = activeLecturer.id === 'maduka';
-        misaVisual.group.visible = activeLecturer.id === 'misa';
-        const activeLecturerVisual = getActiveLecturerVisual();
+        const activeLecturerVisual = showActiveLecturerVisual(activeLecturer.id);
 
         if (lockdownTriggered) {
           const prevX = madukaBrain.x;
@@ -2846,6 +2987,25 @@ export function GameEngineCanvas({
           if (aiRes.stateChanged && madukaBrain.aiState === 'CHASE') {
             alertsTriggered += 1;
             audio.playAlertStinger();
+          }
+
+          // Proximity warning stealth-horror heartbeat & tension cue (louder & faster as lecturer closes in)
+          if (!aiRes.caughtPlayer) {
+            const lecturerDist = Math.hypot(madukaBrain.x - playerX, madukaBrain.z - playerZ);
+            const proximityCue = computeProximityCueParams(
+              lecturerDist,
+              madukaBrain.aiState,
+              lockdownTriggered,
+            );
+            if (proximityCue.active) {
+              proximityCueTimer -= dt;
+              if (proximityCueTimer <= 0) {
+                audio.playProximityWarning(proximityCue);
+                proximityCueTimer = proximityCue.intervalSec;
+              }
+            } else {
+              proximityCueTimer = 0.15;
+            }
           }
 
           const mdDist = Math.hypot(madukaBrain.x - prevX, madukaBrain.z - prevZ);

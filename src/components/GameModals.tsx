@@ -28,6 +28,8 @@ export function GameModals({
   const levelDef = getLevelDef(hud.levelId);
   const lecturerDef = getLecturerDef(hud.lecturerId);
   const hasNextLevel = hud.levelId < hud.totalLevels;
+  const nextLevelDef = hasNextLevel ? getLevelDef(hud.levelId + 1) : null;
+  const nextLecturerDef = nextLevelDef ? getLecturerDef(nextLevelDef.lecturerId) : null;
 
   return (
     <div className="fixed inset-0 z-30 flex items-center justify-center p-4 bg-[#07090d]/85">
@@ -58,6 +60,11 @@ export function GameModals({
                 ? `“${lecturerDef.lines.caught}”`
                 : `Tip: ${levelDef.crazyTwist} (Hunter: ${lecturerDef.name})`}
           </p>
+          {isVictory && nextLevelDef && nextLecturerDef && (
+            <div className="text-xs font-mono text-[#34d399] pt-1">
+              Unlocked {nextLevelDef.shortCode}: {nextLevelDef.title} ({nextLecturerDef.shortName})
+            </div>
+          )}
         </div>
 
         {/* Run Metrics (tabular-nums) */}
@@ -120,14 +127,14 @@ export function GameModals({
             >
               Resume Class
             </button>
-          ) : isVictory && hasNextLevel ? (
+          ) : isVictory && nextLevelDef && nextLecturerDef ? (
             <button
               type="button"
               data-start="true"
               onClick={onNextLevel}
               className="flex-1 px-4 py-2.5 text-sm font-semibold rounded-md bg-[#d99b43] text-[#0e1114] hover:bg-[#e5aa54] transition-colors cursor-pointer whitespace-nowrap"
             >
-              Next: Level {hud.levelId + 1}
+              Next: {nextLevelDef.shortCode} · {nextLecturerDef.shortName}
             </button>
           ) : (
             <button
