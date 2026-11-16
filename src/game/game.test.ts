@@ -362,7 +362,7 @@ test('physics engine allows jumping onto/over desks, tactical rolling, and detec
   assert.ok(rollStart.staminaDelta < 0);
 });
 
-import { CAMPAIGN_LEVELS, getLevelDef } from './levels';
+import { CAMPAIGN_LEVELS, TUTORIAL_LEVEL, getLevelDef } from './levels';
 
 test('10 class levels + Principal finale have valid geometry, unique themes, and distinct lecturers', () => {
   assert.equal(CAMPAIGN_LEVELS.length, 11);
@@ -627,31 +627,33 @@ import {
   saveControlSettings,
 } from './controls';
 
-test('mobile thumbstick computes deadzone, circular clamping, diagonals, and rim auto-sprint', () => {
-  // Micro-jitter inside 14% deadzone produces zero movement
+import { createInitialTutorialState, getTutorialSummary } from './tutorial';
+
+test('mobile thumbstick computes deadzone, progressive curve, circular clamping, and rim auto-sprint', () => {
+  // Micro-jitter inside 16% deadzone produces zero movement
   const tiny = computeJoystickVector(3, -2, 40);
   assert.equal(tiny.moveX, 0);
   assert.equal(tiny.moveY, 0);
   assert.equal(tiny.autoSprinting, false);
 
-  // Mid push up (-dy) walks forward without triggering rim sprint
-  const walkUp = computeJoystickVector(0, -24, 40, 0.14, 0.86, true);
+  // Mid push up (-dy) walks forward smoothly without triggering rim sprint
+  const walkUp = computeJoystickVector(0, -24, 40, 0.16, 0.88, true);
   assert.equal(walkUp.moveX, 0);
-  assert.ok(walkUp.moveY > 0.45 && walkUp.moveY < 0.7);
+  assert.ok(walkUp.moveY > 0.35 && walkUp.moveY < 0.65);
   assert.equal(walkUp.autoSprinting, false);
 
-  // Full diagonal push beyond 86% clamps circularly and enables autoSprinting
-  const diagSprint = computeJoystickVector(60, -60, 40, 0.14, 0.86, true);
+  // Full diagonal push beyond 88% clamps circularly and enables autoSprinting
+  const diagSprint = computeJoystickVector(60, -60, 40, 0.16, 0.88, true);
   assert.ok(Math.hypot(diagSprint.moveX, diagSprint.moveY) <= 1.0001);
   assert.ok(diagSprint.moveX > 0.65 && diagSprint.moveY > 0.65);
   assert.equal(diagSprint.autoSprinting, true);
 
   // Auto-sprint respects opt-out toggle
-  const noAuto = computeJoystickVector(0, -40, 40, 0.14, 0.86, false);
+  const noAuto = computeJoystickVector(0, -40, 40, 0.16, 0.88, false);
   assert.equal(noAuto.autoSprinting, false);
 });
 
-test('cross-device look deltas scale with sensitivity, clamp spikes, and respect invertY', () => {
+test('cross-device look deltas scale separately for touch vs trackpad, clamp spikes, and respect invertY', () => {
   const normalWheel = computeLookDeltas({
     rawDx: 20,
     rawDy: -15,
@@ -678,7 +680,24 @@ test('cross-device look deltas scale with sensitivity, clamp spikes, and respect
   assert.ok(Math.abs(fastWheel.dYaw - normalWheel.dYaw * 2) < 1e-6);
   assert.ok(Math.abs(invertedWheel.dPitch + normalWheel.dPitch) < 1e-6);
 
-  // Extreme glitch spikes are safely clamped
+  // Phone touch default (0.75x) is calmer than 1.0x and clamps spikes at 42px
+  const calmTouch = computeLookDeltas({
+    rawDx: 18,
+    rawDy: -14,
+    sensitivity: DEFAULT_CONTROL_SETTINGS.touchSensitivity,
+    invertY: false,
+    source: 'touch',
+  });
+  const fullTouch = computeLookDeltas({
+    rawDx: 18,
+    rawDy: -14,
+    sensitivity: 1.0,
+    invertY: false,
+    source: 'touch',
+  });
+  assert.ok(Math.abs(calmTouch.dYaw) < Math.abs(fullTouch.dYaw));
+  assert.ok(Math.abs(calmTouch.dPitch) < Math.abs(fullTouch.dPitch));
+
   const hugeTouch = computeLookDeltas({
     rawDx: 900,
     rawDy: -900,
@@ -687,8 +706,8 @@ test('cross-device look deltas scale with sensitivity, clamp spikes, and respect
     source: 'touch',
   });
   const maxAllowedTouch = computeLookDeltas({
-    rawDx: 65,
-    rawDy: -65,
+    rawDx: 42,
+    rawDy: -42,
     sensitivity: 1.0,
     invertY: false,
     source: 'touch',
@@ -697,7 +716,7 @@ test('cross-device look deltas scale with sensitivity, clamp spikes, and respect
   assert.equal(hugeTouch.dPitch, maxAllowedTouch.dPitch);
 });
 
-test('control settings persist and load cleanly across sessions', () => {
+test('control settings persist and load separate phone touch & laptop sensitivities cleanly', () => {
   const store = new Map<string, string>();
   const mockStorage = {
     getItem: (k: string) => store.get(k) ?? null,
@@ -713,10 +732,13 @@ test('control settings persist and load cleanly across sessions', () => {
   } as Storage;
 
   assert.deepEqual(loadControlSettings(mockStorage), DEFAULT_CONTROL_SETTINGS);
+  assert.equal(DEFAULT_CONTROL_SETTINGS.touchSensitivity, 0.75);
+  assert.equal(DEFAULT_CONTROL_SETTINGS.lookSensitivity, 1.0);
 
   saveControlSettings(
     {
       lookSensitivity: 1.6,
+      touchSensitivity: 0.55,
       invertY: true,
       autoSprintJoystick: false,
       sprintToggleMode: true,
@@ -726,10 +748,75 @@ test('control settings persist and load cleanly across sessions', () => {
 
   const loaded = loadControlSettings(mockStorage);
   assert.equal(loaded.lookSensitivity, 1.6);
+  assert.equal(loaded.touchSensitivity, 0.55);
   assert.equal(loaded.invertY, true);
   assert.equal(loaded.autoSprintJoystick, false);
   assert.equal(loaded.sprintToggleMode, true);
 });
+
+test('tutorial LVL 00 has safe open spawns/NPCs, required escape props, and progressive checklist steps', () => {
+  assert.equal(getLevelDef(0).id, 0);
+  assert.equal(TUTORIAL_LEVEL.shortCode, 'LVL 00');
+  assert.equal(isLevelUnlocked(0, []), true);
+
+  const pSpawn = resolvePlayerCollision(
+    TUTORIAL_LEVEL.playerSpawn.x,
+    TUTORIAL_LEVEL.playerSpawn.z,
+    0.42,
+    TUTORIAL_LEVEL.colliders,
+  );
+  assert.ok(Math.hypot(pSpawn.x - TUTORIAL_LEVEL.playerSpawn.x, pSpawn.z - TUTORIAL_LEVEL.playerSpawn.z) < 0.05);
+
+  const mSpawn = resolvePlayerCollision(
+    TUTORIAL_LEVEL.madukaSpawn.x,
+    TUTORIAL_LEVEL.madukaSpawn.z,
+    0.42,
+    TUTORIAL_LEVEL.colliders,
+  );
+  assert.ok(Math.hypot(mSpawn.x - TUTORIAL_LEVEL.madukaSpawn.x, mSpawn.z - TUTORIAL_LEVEL.madukaSpawn.z) < 0.05);
+
+  for (const npc of TUTORIAL_LEVEL.npcs) {
+    const npcCheck = resolvePlayerCollision(npc.x, npc.z, 0.42, TUTORIAL_LEVEL.colliders);
+    assert.ok(Math.hypot(npcCheck.x - npc.x, npcCheck.z - npc.z) < 0.05);
+  }
+
+  assert.ok(TUTORIAL_LEVEL.interactables.some((it) => it.kind === 'breaker'));
+  assert.ok(TUTORIAL_LEVEL.interactables.some((it) => it.kind === 'exit_door'));
+  assert.ok(TUTORIAL_LEVEL.interactables.some((it) => it.kind === 'locker'));
+  assert.ok(TUTORIAL_LEVEL.interactables.some((it) => it.itemId === 'breaker_fuse'));
+  assert.ok(TUTORIAL_LEVEL.interactables.some((it) => it.itemId === 'rear_exit_key'));
+
+  const state = createInitialTutorialState();
+  let summary = getTutorialSummary(state);
+  assert.equal(summary.completedCount, 0);
+  assert.equal(summary.activeStep.id, 'move_look');
+
+  state.movedDistance = 2.5;
+  state.lookedRadians = 0.6;
+  summary = getTutorialSummary(state);
+  assert.equal(summary.completedCount, 1);
+  assert.equal(summary.activeStep.id, 'mobility');
+
+  state.jumped = true;
+  state.sprinted = true;
+  summary = getTutorialSummary(state);
+  assert.equal(summary.completedCount, 2);
+  assert.equal(summary.activeStep.id, 'stealth_ally');
+
+  state.talkedAlly = true;
+  state.crouched = true;
+  summary = getTutorialSummary(state);
+  assert.equal(summary.completedCount, 3);
+  assert.equal(summary.activeStep.id, 'escape_loop');
+
+  state.collectedFuse = true;
+  state.restoredPower = true;
+  state.collectedKey = true;
+  summary = getTutorialSummary(state);
+  assert.equal(summary.completedCount, 4);
+  assert.equal(summary.allPreExitDone, true);
+});
+
 
 
 

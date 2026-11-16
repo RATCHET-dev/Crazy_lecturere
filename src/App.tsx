@@ -23,6 +23,7 @@ import {
   saveControlSettings,
 } from './game/controls';
 import { GameEngineCanvas, GameEngineHandle } from './game/GameEngineCanvas';
+import { createInitialTutorialState, getTutorialSummary } from './game/tutorial';
 import { TitleScreen } from './components/TitleScreen';
 import { GameHud } from './components/GameHud';
 import { GameModals } from './components/GameModals';
@@ -34,15 +35,20 @@ function buildInitialHudForLevel(
 ): GameHudSnapshot {
   const lvl = getLevelDef(levelId);
   const lecturer = getLecturerDef(lecturerId ?? lvl.lecturerId);
+  const tutorialSummary =
+    lvl.id === 0 ? getTutorialSummary(createInitialTutorialState()) : undefined;
   return {
     levelId: lvl.id,
     totalLevels: CAMPAIGN_LEVELS.length,
     levelTitle: lvl.title,
     crazyTwist: lvl.crazyTwist,
     chapterTitle: `${lvl.shortCode} · ${lvl.title}`,
-    objectiveText: lvl.startsInLockdown
-      ? `Find the 30A Ceramic Fuse · ${lvl.crazyTwist}`
-      : `Collect your ${lecturer.courseCode} Assignment from ${lecturer.shortName}'s Office (North-East)`,
+    objectiveText:
+      lvl.id === 0
+        ? 'Orientation: Follow the checklist, grab the East 30A Fuse & restore West Breaker!'
+        : lvl.startsInLockdown
+          ? `Find the 30A Ceramic Fuse · ${lvl.crazyTwist}`
+          : `Collect your ${lecturer.courseCode} Assignment from ${lecturer.shortName}'s Office (North-East)`,
     stamina: 100,
     battery: 100,
     flashlightOn: true,
@@ -75,6 +81,21 @@ function buildInitialHudForLevel(
     grounded: true,
     surface: 'carpet',
     endingKind: null,
+    tutorial: tutorialSummary
+      ? {
+          completedCount: tutorialSummary.completedCount,
+          totalCount: tutorialSummary.totalCount,
+          activeStepTitle: tutorialSummary.activeStep.title,
+          phoneHint: tutorialSummary.activeStep.phoneHint,
+          laptopHint: tutorialSummary.activeStep.laptopHint,
+          allPreExitDone: tutorialSummary.allPreExitDone,
+          steps: tutorialSummary.steps.map((s) => ({
+            id: s.id,
+            title: s.title,
+            done: s.done,
+          })),
+        }
+      : undefined,
   };
 }
 
@@ -90,14 +111,21 @@ export default function App() {
     const completed = savedRun?.completedLevels ?? [];
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      const lvlParam = Number(params.get('level'));
-      if (
-        lvlParam >= 1 &&
-        lvlParam <= CAMPAIGN_LEVELS.length &&
-        isLevelUnlocked(lvlParam, completed)
-      ) {
-        return lvlParam;
+      const rawParam = params.get('level');
+      if (rawParam !== null && rawParam !== '') {
+        const lvlParam = Number(rawParam);
+        if (
+          Number.isFinite(lvlParam) &&
+          lvlParam >= 0 &&
+          lvlParam <= CAMPAIGN_LEVELS.length &&
+          isLevelUnlocked(lvlParam, completed)
+        ) {
+          return lvlParam;
+        }
       }
+    }
+    if (!savedRun?.tutorialCompleted && completed.length === 0) {
+      return 0;
     }
     return getHighestUnlockedLevel(completed, CAMPAIGN_LEVELS.length);
   });
@@ -108,7 +136,10 @@ export default function App() {
       if (isValidLecturerId(lecParam)) return lecParam;
     }
     const completed = savedRun?.completedLevels ?? [];
-    const initialLvl = getHighestUnlockedLevel(completed, CAMPAIGN_LEVELS.length);
+    const initialLvl =
+      !savedRun?.tutorialCompleted && completed.length === 0
+        ? 0
+        : getHighestUnlockedLevel(completed, CAMPAIGN_LEVELS.length);
     return getLevelDef(initialLvl).lecturerId;
   });
   const [phase, setPhase] = useState<GamePhase>(() => {
@@ -165,7 +196,9 @@ export default function App() {
       const completedSet = new Set(prev.completedLevels ?? []);
       const bestTimes = { ...(prev.bestTimesByLevel ?? {}) };
       if (victorySnapshot) {
-        completedSet.add(victorySnapshot.levelId);
+        if (victorySnapshot.levelId >= 1) {
+          completedSet.add(victorySnapshot.levelId);
+        }
         const existingBest = bestTimes[victorySnapshot.levelId];
         if (existingBest === undefined || victorySnapshot.elapsedSeconds < existingBest) {
           bestTimes[victorySnapshot.levelId] = victorySnapshot.elapsedSeconds;
@@ -179,7 +212,10 @@ export default function App() {
         difficulty: nextDiff,
         lecturerId: nextLecturer,
         chapterReached: victorySnapshot
-          ? Math.max(prev.chapterReached, Math.min(CAMPAIGN_LEVELS.length, victorySnapshot.levelId + 1))
+          ? Math.max(
+              prev.chapterReached,
+              Math.min(CAMPAIGN_LEVELS.length, Math.max(1, victorySnapshot.levelId + 1)),
+            )
           : prev.chapterReached,
         bestChapter1TimeSec: updatedBestCh1,
         evidenceCollected: Math.max(
@@ -188,6 +224,9 @@ export default function App() {
         ),
         completedLevels: Array.from(completedSet).sort((a, b) => a - b),
         bestTimesByLevel: bestTimes,
+        tutorialCompleted: Boolean(
+          prev.tutorialCompleted || victorySnapshot?.levelId === 0 || completedSet.size > 0,
+        ),
       };
       saveGameProgress(nextSave);
       setSavedRun(nextSave);
@@ -228,7 +267,8 @@ export default function App() {
 
   const handleNextLevel = useCallback(() => {
     const completed = savedRun?.completedLevels ?? [];
-    const nextLvl = Math.min(CAMPAIGN_LEVELS.length, selectedLevelId + 1);
+    const nextLvl =
+      selectedLevelId === 0 ? 1 : Math.min(CAMPAIGN_LEVELS.length, selectedLevelId + 1);
     if (!isLevelUnlocked(nextLvl, completed)) return;
     const nextLecturer = getLevelDef(nextLvl).lecturerId;
     setSelectedLevelId(nextLvl);

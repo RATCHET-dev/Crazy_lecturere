@@ -1245,6 +1245,96 @@ export const CAMPAIGN_LEVELS: LevelDef[] = [
   },
 ];
 
+export const TUTORIAL_LEVEL: LevelDef = {
+  id: 0,
+  shortCode: 'LVL 00',
+  title: 'Campus Orientation',
+  subtitle: 'Safe Tutorial Wing (Before Level 1)',
+  crazyTwist: 'Practice moving, looking, sprinting, jumping over desks, hiding, and unlocking the South Exit safely!',
+  gimmickTag: 'SAFE ORIENTATION',
+  lecturerId: 'maduka',
+  startsInLockdown: true,
+  requiresPowerRestore: true,
+  madukaSpeedMultiplier: 0,
+  playerSpawn: { x: 0, z: 7.5, yaw: 0 },
+  madukaSpawn: { x: 0, z: -7.2, yaw: 0 },
+  patrolRoute: [
+    { x: 0, z: -7.2, lookYaw: 0, dwellSeconds: 99 },
+    { x: 0, z: -7.2, lookYaw: 0, dwellSeconds: 99 },
+    { x: 0, z: -7.2, lookYaw: 0, dwellSeconds: 99 },
+    { x: 0, z: -7.2, lookYaw: 0, dwellSeconds: 99 },
+  ],
+  colliders: [
+    ...BASE_PERIMETER,
+    { id: 'desk_lectern', minX: -1.2, maxX: 1.2, minZ: -9.4, maxZ: -8.2, height: 1.15, kind: 'desk' },
+    { id: 'tut_desk_vault', minX: -2.0, maxX: 2.0, minZ: 1.4, maxZ: 2.25, height: 0.85, kind: 'desk' },
+    { id: 'tut_desk_west', minX: -7.5, maxX: -4.2, minZ: -3.2, maxZ: -2.2, height: 0.95, kind: 'desk' },
+    { id: 'tut_desk_east', minX: 4.2, maxX: 7.5, minZ: -3.2, maxZ: -2.2, height: 0.95, kind: 'desk' },
+    { id: 'locker_w1', minX: -11.4, maxX: -10.3, minZ: -2.2, maxZ: -0.8, height: 2.2, kind: 'locker' },
+  ],
+  carpetZones: [
+    { minX: -1.3, maxX: 1.3, minZ: -8.2, maxZ: 10.2, color: 0x224a46 },
+  ],
+  interactables: [
+    { id: 'pickup_fuse', kind: 'pickup', label: 'Take Practice 30A Fuse (East Desk)', x: 5.8, y: 1.05, z: -2.7, radius: 2.5, itemId: 'breaker_fuse' },
+    { id: 'breaker_panel', kind: 'breaker', label: 'Practice Breaker Panel (West Wall)', x: -11.4, y: 1.4, z: -6.2, radius: 2.6 },
+    { id: 'pickup_rear_key', kind: 'pickup', label: 'Take Orientation Exit Key (West Desk)', x: -5.8, y: 1.05, z: -2.7, radius: 2.5, itemId: 'rear_exit_key' },
+    { id: 'locker_1', kind: 'locker', label: 'Practice Locker (West Wall)', x: -9.8, y: 1.1, z: -1.5, radius: 2.3 },
+    { id: 'rear_exit_door', kind: 'exit_door', label: 'Orientation South Exit Door', x: 0, y: 1.4, z: 11.7, radius: 2.6 },
+  ],
+  npcs: [
+    {
+      id: 'daniel',
+      name: 'Daniel Okafor',
+      role: 'Orientation Guide',
+      x: -2.8,
+      z: 5.2,
+      yaw: 0.45,
+      behavior: 'ally',
+      dialogueLines: [
+        'Welcome to Blackwood! Try sprinting and jumping over that low practice desk ahead.',
+        'Always grab the glowing 30A Fuse first, restore the West Breaker, then grab the Exit Key!',
+      ],
+      rewardType: 'battery_boost',
+      rewardText: 'Daniel topped up your flashlight battery (+38%) for Orientation!',
+    },
+    {
+      id: 'amara',
+      name: 'Amara Johnson',
+      role: 'Stealth Mentor',
+      x: 2.8,
+      z: 5.2,
+      yaw: -0.45,
+      behavior: 'ally',
+      dialogueLines: [
+        'Wool carpet muffles footsteps! Crouch behind desks or duck into the West Locker if a lecturer spots you.',
+        'Take your time adjusting Look Sensitivity in the top-right settings icon before Level 1!',
+      ],
+    },
+  ],
+  hazardBeams: [],
+  theme: {
+    floorColor: 0x161d24,
+    wallColor: 0x26313d,
+    deskColor: 0x6b472b,
+    fogColor: 0x0d141c,
+    fogDensity: 0.014,
+    hemiIntensity: 1.35,
+    lampColor: 0x99f6e4,
+    chalkboardHeading: 'BLACKWOOD UNIVERSITY · ORIENTATION (LVL 00)',
+    chalkboardLines: [
+      'SAFE PRACTICE HALL — NO DETENTION HERE!',
+      '1. MOVE & LOOK  2. SPRINT + JUMP DESK  3. CROUCH / LOCKER',
+      '4. FUSE (EAST) -> BREAKER (WEST) -> KEY -> SOUTH EXIT',
+    ],
+    plaqueText: 'TO MAIN LEVEL 1',
+  },
+  victoryTitle: 'Orientation Complete!',
+  victorySummary:
+    'You mastered Blackwood’s movement, camera look, stealth lockers, and the Fuse-Breaker-Key escape loop! You’re ready to face Prof. Maduka in Main Level 1.',
+};
+
 export function getLevelDef(levelId: number): LevelDef {
+  if (levelId === 0) return TUTORIAL_LEVEL;
   return CAMPAIGN_LEVELS.find((lvl) => lvl.id === levelId) ?? CAMPAIGN_LEVELS[0];
 }

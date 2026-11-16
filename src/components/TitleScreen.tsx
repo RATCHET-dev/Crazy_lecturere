@@ -276,14 +276,51 @@ export function TitleScreen({
           )}
         </section>
 
-        {/* 10 Class Levels + Principal Finale Selector (Sequential Locking) */}
+        {/* Tutorial + 10 Class Levels + Principal Finale Selector (Sequential Locking) */}
         <div className="bg-[#0e1116]/94 border border-white/10 rounded-lg p-2.5 sm:p-3 space-y-2">
           <div className="flex items-center justify-between gap-2 text-xs text-[#9aa3ad]">
-            <span>Select Level (1–10 + Principal)</span>
+            <span>Select Level (Tutorial + 1–10 + Principal)</span>
             <span className="font-mono text-[#d99b43]">
               {completedSet.size}/{CAMPAIGN_LEVELS.length} Cleared · Pass each class to unlock the next
             </span>
           </div>
+          <button
+            type="button"
+            data-level-select={0}
+            data-level-locked="false"
+            onClick={() => onLevelChange(0)}
+            className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 text-left rounded-md border transition-colors cursor-pointer ${
+              selectedLevelId === 0
+                ? 'bg-[#d99b43] text-[#0e1114] border-[#d99b43]'
+                : 'bg-[#121920] text-[#efece6] border-[#2dd4bf]/35 hover:border-[#2dd4bf]'
+            }`}
+          >
+            <div className="min-w-0 flex items-center gap-2">
+              <span
+                className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                  selectedLevelId === 0
+                    ? 'bg-[#0e1114]/15 text-[#0e1114]'
+                    : 'bg-[#2dd4bf]/15 text-[#5eead4]'
+                }`}
+              >
+                LVL 00 · TUTORIAL
+              </span>
+              <span className="text-xs font-semibold truncate">
+                Campus Orientation — Practice Controls, Jumping, Stealth &amp; Exit Loop
+              </span>
+            </div>
+            <span
+              className={`text-[10px] font-mono shrink-0 ${
+                selectedLevelId === 0
+                  ? 'text-[#0e1114] font-semibold'
+                  : savedRun?.tutorialCompleted
+                    ? 'text-[#34d399]'
+                    : 'text-[#5eead4]'
+              }`}
+            >
+              {savedRun?.tutorialCompleted ? '✓ Completed' : 'Start Here'}
+            </span>
+          </button>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-1.5">
             {CAMPAIGN_LEVELS.map((lvl) => {
               const unlocked = isLevelUnlocked(lvl.id, completedLevels);
@@ -515,18 +552,41 @@ export function TitleScreen({
               ))}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1.5 border-t border-white/10 text-[11px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1.5 border-t border-white/10 text-[11px]">
               <label className="space-y-1">
                 <div className="flex justify-between text-[#cfd4da]">
-                  <span>Look Speed</span>
-                  <span className="font-mono text-[#d99b43]">
+                  <span>Phone Touch Look</span>
+                  <span className="font-mono text-[#d99b43] tabular-nums">
+                    {controlSettings.touchSensitivity.toFixed(2)}x
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0.3}
+                  max={1.8}
+                  step={0.05}
+                  value={controlSettings.touchSensitivity}
+                  onChange={(e) =>
+                    onControlSettingsChange({
+                      ...controlSettings,
+                      touchSensitivity: Number(e.target.value),
+                    })
+                  }
+                  className="w-full accent-[#d99b43] cursor-pointer"
+                />
+              </label>
+
+              <label className="space-y-1">
+                <div className="flex justify-between text-[#cfd4da]">
+                  <span>Laptop Look Speed</span>
+                  <span className="font-mono text-[#d99b43] tabular-nums">
                     {controlSettings.lookSensitivity.toFixed(1)}x
                   </span>
                 </div>
                 <input
                   type="range"
-                  min={0.4}
-                  max={2.2}
+                  min={0.3}
+                  max={2.0}
                   step={0.1}
                   value={controlSettings.lookSensitivity}
                   onChange={(e) =>

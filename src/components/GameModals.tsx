@@ -41,7 +41,9 @@ export function GameModals({
         <div className="space-y-2">
           <div className="text-xs font-mono text-[#d99b43]">
             {isVictory
-              ? `${levelDef.shortCode} OF ${hud.totalLevels} COMPLETE · ${levelDef.gimmickTag}`
+              ? hud.levelId === 0
+                ? 'ORIENTATION COMPLETE · SAFE TUTORIAL'
+                : `${levelDef.shortCode} OF ${hud.totalLevels} COMPLETE · ${levelDef.gimmickTag}`
               : isCaught
                 ? `${levelDef.shortCode} · ${lecturerDef.courseCode} DETENTION`
                 : `${levelDef.shortCode} · GAME PAUSED`}

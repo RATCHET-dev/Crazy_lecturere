@@ -58,6 +58,7 @@ export function createDefaultSave(): SaveGamePayload {
     evidenceCollected: 0,
     completedLevels: [],
     bestTimesByLevel: {},
+    tutorialCompleted: false,
   };
 }
 
@@ -104,6 +105,7 @@ export function loadGameProgress(storage?: Storage): SaveGamePayload | null {
         parsed.bestTimesByLevel && typeof parsed.bestTimesByLevel === 'object'
           ? parsed.bestTimesByLevel
           : {},
+      tutorialCompleted: Boolean(parsed.tutorialCompleted),
     };
   } catch {
     return null;

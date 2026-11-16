@@ -59,6 +59,11 @@ import {
   clampSensitivity,
   computeLookDeltas,
 } from './controls';
+import {
+  TutorialProgressState,
+  createInitialTutorialState,
+  getTutorialSummary,
+} from './tutorial';
 
 export interface MobileInputState {
   moveX: number; // -1..1
@@ -1654,6 +1659,7 @@ export function GameEngineCanvas({
     let npcLineSpeaker: string | null = null;
     let npcLineText: string | null = null;
     let npcLineTimer = 0;
+    let tutorialState: TutorialProgressState = createInitialTutorialState();
 
     // Input Tracking (Edge vs Held)
     const keysHeld = new Set<string>();
@@ -1676,6 +1682,18 @@ export function GameEngineCanvas({
 
     const computeObjectiveText = (): string => {
       const activeLecturer = getLecturerDef(lecturerIdRef.current);
+      if (activeLevel.id === 0) {
+        if (!powerRestored && !getInventoryHas('breaker_fuse')) {
+          return 'Orientation: Follow the checklist, grab the East 30A Fuse & restore West Breaker!';
+        }
+        if (!powerRestored) {
+          return 'Orientation: Insert the 30A Fuse into the West Wall Breaker!';
+        }
+        if (!getInventoryHas('rear_exit_key')) {
+          return 'Orientation: Grab the Exit Key on the West Desk!';
+        }
+        return 'Orientation Complete: Unlock the South Exit Door to start Level 1!';
+      }
       if (!lockdownTriggered) {
         return `Collect your ${activeLecturer.courseCode} Assignment from ${activeLecturer.shortName}'s Office (North-East)`;
       }
@@ -1697,6 +1715,8 @@ export function GameEngineCanvas({
       endingKind: GameHudSnapshot['endingKind'] = null,
     ): GameHudSnapshot => {
       const activeLecturer = getLecturerDef(lecturerIdRef.current);
+      const tutorialSummary =
+        activeLevel.id === 0 ? getTutorialSummary(tutorialState) : undefined;
       return {
         levelId: activeLevel.id,
         totalLevels: CAMPAIGN_LEVELS.length,
@@ -1747,6 +1767,21 @@ export function GameEngineCanvas({
         grounded: physicsState.grounded,
         surface: currentSurface,
         endingKind,
+        tutorial: tutorialSummary
+          ? {
+              completedCount: tutorialSummary.completedCount,
+              totalCount: tutorialSummary.totalCount,
+              activeStepTitle: tutorialSummary.activeStep.title,
+              phoneHint: tutorialSummary.activeStep.phoneHint,
+              laptopHint: tutorialSummary.activeStep.laptopHint,
+              allPreExitDone: tutorialSummary.allPreExitDone,
+              steps: tutorialSummary.steps.map((s) => ({
+                id: s.id,
+                title: s.title,
+                done: s.done,
+              })),
+            }
+          : undefined,
       };
     };
 
@@ -1817,6 +1852,7 @@ export function GameEngineCanvas({
       npcLineSpeaker = null;
       npcLineText = null;
       npcLineTimer = 0;
+      tutorialState = createInitialTutorialState();
       keysHeld.clear();
 
       for (const npcActor of npcActors) {
@@ -1834,9 +1870,10 @@ export function GameEngineCanvas({
       for (const [, mesh] of pickupMeshes) {
         mesh.visible = true;
       }
-      hemiLight.intensity = targetLevel.theme.hemiIntensity * (targetLevel.startsInLockdown ? 0.72 : 1.0);
-      hallLampA.intensity = targetLevel.startsInLockdown ? 3.2 : 8.5;
-      hallLampB.intensity = targetLevel.startsInLockdown ? 2.8 : 7.5;
+      const isDimLockdown = targetLevel.startsInLockdown && targetLevel.id !== 0;
+      hemiLight.intensity = targetLevel.theme.hemiIntensity * (isDimLockdown ? 0.72 : 1.0);
+      hallLampA.intensity = isDimLockdown ? 3.2 : 8.5;
+      hallLampB.intensity = isDimLockdown ? 2.8 : 7.5;
       exitSignMat.color.setHex(0xef4444);
       exitSignMat.emissive.setHex(0xef4444);
       exitLight.color.setHex(0xef4444);
@@ -1936,6 +1973,7 @@ export function GameEngineCanvas({
         const npcActor = npcActors.find((n) => n.def.id === npcId);
         if (npcActor) {
           npcTalkedIds.add(npcActor.def.id);
+          tutorialState.talkedAlly = true;
           const line =
             npcActor.def.dialogueLines[npcActor.talkIndex % npcActor.def.dialogueLines.length];
           npcActor.talkIndex += 1;
@@ -1949,7 +1987,7 @@ export function GameEngineCanvas({
             if (npcActor.def.rewardType === 'battery_boost') {
               battery = Math.min(100, battery + 38);
               if (npcActor.def.rewardText) npcLineText = npcActor.def.rewardText;
-            } else if (npcActor.def.rewardType === 'distract_maduka') {
+            } else if (npcActor.def.rewardType === 'distract_maduka' && activeLevel.id !== 0) {
               const decoyX = playerX > 0 ? -8.2 : 8.2;
               const decoyZ = -6.0;
               madukaBrain = {
@@ -1978,6 +2016,7 @@ export function GameEngineCanvas({
         preHideZ = playerZ;
         hiddenInLockerId = def.id;
         crouching = true;
+        tutorialState.hidInLocker = true;
         playerX = def.x;
         playerZ = def.z;
         physicsState = createInitialPhysicsState(def.x, def.z);
@@ -1993,6 +2032,7 @@ export function GameEngineCanvas({
           return;
         }
         powerRestored = true;
+        tutorialState.restoredPower = true;
         inventory = inventory.filter((i) => i.id !== 'breaker_fuse');
         hemiLight.intensity = activeLevel.theme.hemiIntensity;
         hallLampA.intensity = 6.8;
@@ -2003,16 +2043,24 @@ export function GameEngineCanvas({
         exitSignMat.emissive.setHex(0x22c55e);
         exitLight.color.setHex(0x22c55e);
         audio.playLockdownBell();
-        madukaBrain = {
-          ...madukaBrain,
-          aiState: 'INVESTIGATE',
-          targetX: def.x + 1.5,
-          targetZ: def.z,
-          suspicion: 65,
-          stateTimer: 5.0,
-          activeLine: 'WHO TOUCHED THE AUXILIARY BREAKER?!',
-          lineTimer: 3.5,
-        };
+        if (activeLevel.id !== 0) {
+          madukaBrain = {
+            ...madukaBrain,
+            aiState: 'INVESTIGATE',
+            targetX: def.x + 1.5,
+            targetZ: def.z,
+            suspicion: 65,
+            stateTimer: 5.0,
+            activeLine: 'WHO TOUCHED THE AUXILIARY BREAKER?!',
+            lineTimer: 3.5,
+          };
+        } else {
+          madukaBrain = {
+            ...madukaBrain,
+            activeLine: 'Breaker restored! Now grab the Exit Key on the West Desk and head to the South Door!',
+            lineTimer: 4.5,
+          };
+        }
         onHudUpdateRef.current(buildHudSnapshot(null, null));
         return;
       }
@@ -2039,6 +2087,8 @@ export function GameEngineCanvas({
           battery = Math.min(100, battery + 45);
           audio.playPickup();
         } else {
+          if (def.itemId === 'breaker_fuse') tutorialState.collectedFuse = true;
+          if (def.itemId === 'rear_exit_key') tutorialState.collectedKey = true;
           inventory = [...inventory, ITEM_CATALOG[def.itemId]];
           audio.playPickup();
         }
@@ -2140,7 +2190,7 @@ export function GameEngineCanvas({
             : lines[Math.floor(Math.random() * lines.length)];
         const dist = Math.hypot(madukaBrain.x - playerX, madukaBrain.z - playerZ);
 
-        if (emote === 'taunt' || emote === 'boogie') {
+        if (activeLevel.id !== 0 && (emote === 'taunt' || emote === 'boogie')) {
           const lureRadius = emote === 'taunt' ? 10.5 : 5.5;
           if (lockdownTriggered && dist <= lureRadius + 4) {
             madukaBrain = {
@@ -2217,12 +2267,13 @@ export function GameEngineCanvas({
         const { dYaw, dPitch } = computeLookDeltas({
           rawDx: dx,
           rawDy: dy,
-          sensitivity: cfg.lookSensitivity,
+          sensitivity: cfg.touchSensitivity,
           invertY: cfg.invertY,
           source: 'touch',
         });
         playerYaw += dYaw;
         playerPitch = THREE.MathUtils.clamp(playerPitch + dPitch, -1.25, 1.25);
+        tutorialState.lookedRadians += Math.abs(dYaw) + Math.abs(dPitch);
       },
       setMobileMove: (mx, my) => {
         mobileMove.x = THREE.MathUtils.clamp(mx, -1, 1);
@@ -2370,6 +2421,7 @@ export function GameEngineCanvas({
         });
         playerYaw += dYaw;
         playerPitch = THREE.MathUtils.clamp(playerPitch + dPitch, -1.3, 1.3);
+        tutorialState.lookedRadians += Math.abs(dYaw) + Math.abs(dPitch);
       } else if (isPointerDragging) {
         const rawDx = e.clientX - lastMouseX;
         const rawDy = e.clientY - lastMouseY;
@@ -2384,6 +2436,7 @@ export function GameEngineCanvas({
         });
         playerYaw += dYaw;
         playerPitch = THREE.MathUtils.clamp(playerPitch + dPitch, -1.3, 1.3);
+        tutorialState.lookedRadians += Math.abs(dYaw) + Math.abs(dPitch);
       }
     };
 
@@ -2401,6 +2454,7 @@ export function GameEngineCanvas({
       });
       playerYaw += dYaw;
       playerPitch = THREE.MathUtils.clamp(playerPitch + dPitch, -1.3, 1.3);
+      tutorialState.lookedRadians += Math.abs(dYaw) + Math.abs(dPitch);
     };
 
     const onTouchStart = (e: TouchEvent) => {
@@ -2435,12 +2489,13 @@ export function GameEngineCanvas({
           const { dYaw, dPitch } = computeLookDeltas({
             rawDx,
             rawDy,
-            sensitivity: cfg.lookSensitivity,
+            sensitivity: cfg.touchSensitivity,
             invertY: cfg.invertY,
             source: 'touch',
           });
           playerYaw += dYaw;
           playerPitch = THREE.MathUtils.clamp(playerPitch + dPitch, -1.25, 1.25);
+          tutorialState.lookedRadians += Math.abs(dYaw) + Math.abs(dPitch);
         }
         break;
       }
@@ -2569,7 +2624,7 @@ export function GameEngineCanvas({
               }
             }
           }
-          if (phaseRef.current === 'playing' && lockdownTriggered) {
+          if (phaseRef.current === 'playing' && lockdownTriggered && activeLevel.id !== 0) {
             madukaBrain = {
               ...madukaBrain,
               aiState: 'INVESTIGATE',
@@ -2703,15 +2758,15 @@ export function GameEngineCanvas({
         const keyTurnInput = (keysHeld.has('KeyJ') ? 1 : 0) - (keysHeld.has('KeyL') ? 1 : 0);
         const keyPitchInput = (keysHeld.has('KeyI') ? 1 : 0) - (keysHeld.has('KeyK') ? 1 : 0);
         if (keyTurnInput !== 0) {
-          playerYaw += keyTurnInput * 2.25 * sens * dt;
+          const dYaw = keyTurnInput * 2.25 * sens * dt;
+          playerYaw += dYaw;
+          tutorialState.lookedRadians += Math.abs(dYaw);
         }
         if (keyPitchInput !== 0) {
           const pitchSign = cfg.invertY ? -1 : 1;
-          playerPitch = THREE.MathUtils.clamp(
-            playerPitch + keyPitchInput * 1.45 * sens * pitchSign * dt,
-            -1.25,
-            1.25,
-          );
+          const dPitch = keyPitchInput * 1.45 * sens * pitchSign * dt;
+          playerPitch = THREE.MathUtils.clamp(playerPitch + dPitch, -1.25, 1.25);
+          tutorialState.lookedRadians += Math.abs(dPitch);
         }
 
         // Realistic 3D Kinematics (Momentum, Table Vaulting/Jumping, Sprinting, Rolling & Surface Audio)
@@ -2774,11 +2829,20 @@ export function GameEngineCanvas({
         currentSurface = physStep.surface;
         stamina = THREE.MathUtils.clamp(stamina + physStep.staminaDelta, 0, 100);
 
+        if (physStep.distMoved > 0.001) {
+          tutorialState.movedDistance += physStep.distMoved;
+          if (wantSprint) tutorialState.sprinted = true;
+        }
+        if (crouching) tutorialState.crouched = true;
+        if (hiddenInLockerId) tutorialState.hidInLocker = true;
+
         if (physStep.jumped) {
+          tutorialState.jumped = true;
           squashSpring = 1.18;
           audio.playJumpPush(physStep.surface);
         }
         if (physStep.startedRoll) {
+          tutorialState.rolled = true;
           squashSpring = 0.76;
           audio.playRollWhoosh(physStep.surface);
         }
@@ -3047,10 +3111,16 @@ export function GameEngineCanvas({
         }
 
         // Step Active Lecturer AI (10 Class Lecturers + Principal Chief O. Blackwood)
+        // Orientation (id: 0) keeps Prof. Maduka peacefully observing at his lectern
         const activeLecturer = getLecturerDef(lecturerIdRef.current);
         const activeLecturerVisual = showActiveLecturerVisual(activeLecturer.id);
 
-        if (lockdownTriggered) {
+        if (madukaBrain.lineTimer > 0 && activeLevel.id === 0) {
+          madukaBrain.lineTimer = Math.max(0, madukaBrain.lineTimer - dt);
+          if (madukaBrain.lineTimer === 0) madukaBrain.activeLine = null;
+        }
+
+        if (lockdownTriggered && activeLevel.id !== 0) {
           const prevX = madukaBrain.x;
           const prevZ = madukaBrain.z;
           const aiRes = stepMadukaAi(

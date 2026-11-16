@@ -79,8 +79,8 @@ export function GameHud({
       clientX - cx,
       clientY - cy,
       maxRadius,
-      0.14,
-      0.86,
+      0.16,
+      0.88,
       controlSettings.autoSprintJoystick,
     );
     setKnobOffset({ x: out.knobOffsetX, y: out.knobOffsetY });
@@ -122,21 +122,71 @@ export function GameHud({
 
       {/* Top Bar: Responsive Flex Row so Objective Card never collides with Timer/Utility buttons */}
       <div className="fixed top-2.5 sm:top-4 inset-x-2.5 sm:inset-x-4 flex items-start justify-between gap-2">
-        <div className="flex-1 sm:flex-initial min-w-0 max-w-sm bg-[#0c0f14]/90 border border-white/10 rounded-md px-2.5 py-1.5 sm:px-3.5 sm:py-2.5">
-          <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 sm:gap-1.5 text-[10px] sm:text-[11px] font-mono text-[#d99b43] min-w-0">
-            <span className="shrink-0 font-semibold">LVL {hud.levelId}/{hud.totalLevels}</span>
-            <span aria-hidden="true" className="hidden sm:inline">·</span>
-            <span className="truncate hidden sm:inline">{hud.levelTitle}</span>
-            <span aria-hidden="true">·</span>
-            <span className="shrink-0">RANK {hud.rank}</span>
-            <span aria-hidden="true">·</span>
-            <span className="shrink-0 text-[#9aa3ad]">
-              NPC {hud.npcsTalkedCount}/{hud.npcsTotalCount}
-            </span>
+        <div className="flex-1 sm:flex-initial min-w-0 max-w-sm flex flex-col gap-1.5">
+          <div className="bg-[#0c0f14]/90 border border-white/10 rounded-md px-2.5 py-1.5 sm:px-3.5 sm:py-2.5">
+            <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 sm:gap-1.5 text-[10px] sm:text-[11px] font-mono text-[#d99b43] min-w-0">
+              <span className="shrink-0 font-semibold">
+                {hud.levelId === 0 ? 'LVL 00 · TUTORIAL' : `LVL ${hud.levelId}/${hud.totalLevels}`}
+              </span>
+              <span aria-hidden="true" className="hidden sm:inline">·</span>
+              <span className="truncate hidden sm:inline">{hud.levelTitle}</span>
+              <span aria-hidden="true">·</span>
+              <span className="shrink-0">RANK {hud.rank}</span>
+              <span aria-hidden="true">·</span>
+              <span className="shrink-0 text-[#9aa3ad]">
+                NPC {hud.npcsTalkedCount}/{hud.npcsTotalCount}
+              </span>
+            </div>
+            <div className="text-[11px] sm:text-sm font-medium text-[#efece6] mt-0.5 leading-snug">
+              {hud.objectiveText}
+            </div>
           </div>
-          <div className="text-[11px] sm:text-sm font-medium text-[#efece6] mt-0.5 leading-snug">
-            {hud.objectiveText}
-          </div>
+
+          {hud.tutorial && (
+            <div
+              data-testid="tutorial-orientation-card"
+              className="bg-[#0c1419]/94 border border-[#2dd4bf]/40 rounded-md px-2.5 py-1.5 sm:px-3 sm:py-2 space-y-1"
+            >
+              <div className="flex items-center justify-between gap-2 text-[10px] font-mono">
+                <span className="text-[#5eead4] font-semibold">
+                  ORIENTATION · {hud.tutorial.activeStepTitle}
+                </span>
+                <span className="text-[#d99b43] tabular-nums shrink-0">
+                  {hud.tutorial.completedCount}/{hud.tutorial.totalCount} DONE
+                </span>
+              </div>
+
+              <div className="grid grid-cols-4 gap-1">
+                {hud.tutorial.steps.map((step, idx) => (
+                  <div
+                    key={step.id}
+                    className={`px-1 py-0.5 rounded text-[10px] font-mono text-center whitespace-nowrap border ${
+                      step.done
+                        ? 'bg-[#102924] border-[#34d399]/60 text-[#34d399]'
+                        : 'bg-[#090e13] border-white/10 text-[#9aa3ad]'
+                    }`}
+                  >
+                    {step.done ? `✓ ${idx + 1}` : `${idx + 1}`}
+                  </div>
+                ))}
+              </div>
+
+              {forceTouchHud || isCoarseTouchDevice ? (
+                <div className="text-[11px] text-[#e2e8f0] leading-snug">
+                  {hud.tutorial.phoneHint}
+                </div>
+              ) : (
+                <>
+                  <div className="block md:hidden text-[11px] text-[#e2e8f0] leading-snug">
+                    {hud.tutorial.phoneHint}
+                  </div>
+                  <div className="hidden md:block text-[11px] text-[#e2e8f0] leading-snug">
+                    {hud.tutorial.laptopHint}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Top-Right: Compact Square SVG Utility Controls + Timer + Controls Settings */}
@@ -237,15 +287,40 @@ export function GameHud({
 
               <label className="block space-y-1">
                 <div className="flex items-center justify-between text-[11px] text-[#cfd4da]">
-                  <span>Look Sensitivity</span>
+                  <span>Phone Touch Look</span>
+                  <span className="font-mono text-[#d99b43] tabular-nums">
+                    {controlSettings.touchSensitivity.toFixed(2)}x
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  aria-label="Phone Touch Look Sensitivity"
+                  min={0.3}
+                  max={1.8}
+                  step={0.05}
+                  value={controlSettings.touchSensitivity}
+                  onChange={(e) =>
+                    onControlSettingsChange({
+                      ...controlSettings,
+                      touchSensitivity: Number(e.target.value),
+                    })
+                  }
+                  className="w-full accent-[#d99b43] cursor-pointer"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <div className="flex items-center justify-between text-[11px] text-[#cfd4da]">
+                  <span>Laptop Look Speed</span>
                   <span className="font-mono text-[#d99b43] tabular-nums">
                     {controlSettings.lookSensitivity.toFixed(1)}x
                   </span>
                 </div>
                 <input
                   type="range"
-                  min={0.4}
-                  max={2.2}
+                  aria-label="Laptop Look Sensitivity"
+                  min={0.3}
+                  max={2.0}
                   step={0.1}
                   value={controlSettings.lookSensitivity}
                   onChange={(e) =>

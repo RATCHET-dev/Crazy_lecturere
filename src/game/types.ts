@@ -187,6 +187,15 @@ export interface GameHudSnapshot {
   grounded: boolean;
   surface: SurfaceMaterial;
   endingKind: 'freedom_ch1' | 'caught' | null;
+  tutorial?: {
+    completedCount: number;
+    totalCount: number;
+    activeStepTitle: string;
+    phoneHint: string;
+    laptopHint: string;
+    allPreExitDone: boolean;
+    steps: { id: string; title: string; done: boolean }[];
+  };
 }
 
 export interface SaveGamePayload {
@@ -200,5 +209,6 @@ export interface SaveGamePayload {
   evidenceCollected: number;
   completedLevels: number[];
   bestTimesByLevel: Record<number, number>;
+  tutorialCompleted?: boolean;
 }
 
